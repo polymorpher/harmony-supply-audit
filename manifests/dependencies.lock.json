@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "default_toolkit": {
+    "go": "1.24.2",
+    "cgo_enabled": false,
+    "modules": {
+      "github.com/ethereum/go-ethereum": "v1.11.2"
+    }
+  },
+  "protocol_reference": {
+    "repository": "https://github.com/polymorpher/harmony.git",
+    "revision": "8292e786db513186faff5b397fdf864c0c189ac1",
+    "upstream": "https://github.com/harmony-one/harmony.git",
+    "note": "The fork revision pins the protocol code and fake-wrapper regression test cited by the reports. The default audit toolkit does not import it."
+  },
+  "optional_native_integration": {
+    "mcl": {
+      "repository": "https://github.com/harmony-one/mcl.git",
+      "revision": "ac6b73317f5321b33fc877a4dd7218e1815693d8"
+    },
+    "bls": {
+      "repository": "https://github.com/harmony-one/bls.git",
+      "revision": "2b7e49894c0f15f5c40cf74046505b7f74946e52"
+    },
+    "note": "These revisions describe the tested optional integration lane. Historical native-library provenance is not complete enough to promise identical old binary hashes."
+  },
+  "database_format": {
+    "source": "Harmony LevelDB",
+    "go_ethereum_compatibility": "v1.11.2",
+    "required_raw_namespaces": [
+      "h<height>n",
+      "h<height><hash>",
+      "b<height><hash>",
+      "cxReceipt",
+      "cx",
+      "blk-rwd-",
+      "validator-list",
+      "vc<code-hash>",
+      "secure-key-"
+    ]
+  }
+}

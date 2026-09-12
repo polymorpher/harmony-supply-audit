@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "cutoff_utc": "2026-09-10T14:00:00Z",
+  "shards": [
+    {
+      "shard_id": 0,
+      "require_validator_list": true,
+      "reward_accumulator_at_blocks": [
+        93529887,
+        93623067,
+        93624315
+      ],
+      "checkpoints": [
+        {
+          "name": "staking-pre",
+          "block": 3375103,
+          "hash": "0xd8da3c30639d8c40535ed70e766a872d48c68107903ae30411050f84e1829209",
+          "state_root": "0xe0666924c3a7143665944f88b58b551e791750063204b30f4c3f9623bfd67e6e",
+          "require_body": true
+        },
+        {
+          "name": "staking-first",
+          "block": 3375104,
+          "hash": "0x12b628e6b5962c869b750c0e50c188aa09eb3e56c1208880b869172efdd41035",
+          "state_root": "0x1ed3213e4febb5dae290c7cb93bb44c5a562fef08262f7b402ccafa6a12f7907",
+          "require_body": true
+        },
+        {
+          "name": "staking-epoch-186-end",
+          "block": 3391487,
+          "hash": "0xb0f2b6cf2729b1862801087b0e2636c5f50575fd45b2a3a4160adff1575a0aec",
+          "state_root": "0x6f96e9b601383c7191c934a948ec70b190ba865cb73b5b00f4d067e4106f90a6",
+          "require_body": true
+        },
+        {
+          "name": "pre-hip30-migration",
+          "block": 49119231,
+          "hash": "0x440f9fee2c315569cd92b599669c1b21420df11795b5e494e891b1cf82c8dce4",
+          "state_root": "0x54c29d60854ae440ab0db87acf126bc65011205a28a90593d4c48d5c5e7469d8",
+          "require_body": true
+        },
+        {
+          "name": "post-2023-fix",
+          "block": 51150847,
+          "hash": "0x45eb72ee196bf32667f973c75f4357a938c793fe0a53857c1dfe6f4bd23e6010",
+          "state_root": "0xf9ecacb5a38fec46d3ee23de84a2d8f5d3644a6a7ec8e76e70400214dfd1b517",
+          "require_body": true
+        },
+        {
+          "name": "october-2024",
+          "block": 64847871,
+          "hash": "0xb8dd8adb02713fbc693bf896f0601e3782c1d03e99cc50e1e31fa4877bf9a22e",
+          "state_root": "0x690e78c85a265b0e1ae813e8db6c5951fdcb8d78c46084843646ee92a0e21d16",
+          "require_body": true
+        },
+        {
+          "name": "september-2025",
+          "block": 78168062,
+          "hash": "0xc4e3f15a93e7a86308b07ca816c0777d24b9356d756d0f554eab2543f621bfa0",
+          "state_root": "0xf62d8bd02a2905d0de603c82976f86bed9529045bb7687ad22a12dabf2480960",
+          "require_body": true
+        },
+        {
+          "name": "pre-bloom",
+          "block": 91488254,
+          "hash": "0x9c70b070ba06e8298df3715e5ebe8144b91d79fe8d6ea29408789cbdc5756001",
+          "state_root": "0x5ac83d4743fb88e389916fbf468cf9f90af41a7851d0e2fa3c220e3f1e5735a6",
+          "require_body": true
+        },
+        {
+          "name": "recovery-checkpoint",
+          "block": 91812527,
+          "hash": "0x0d0d7d121ddd5463abd76205a9f4df34deb1d798dfa91558b55169d41355ab30",
+          "state_root": "0x2a51c3c3ea20084f3c1ede9034565e041742d888137308dc0b320992f4404445",
+          "require_body": true
+        },
+        {
+          "name": "original-snapshot",
+          "block": 93529887,
+          "hash": "0x8d4d05ef8a3fc61d06b06ed9d8668a5cde4fb06d59b0e367e1075beff31f372f",
+          "state_root": "0xde6ebf84f3cbb6095603dbfc8c33fba8abc9333ca5072a3f9ee97fc1bcb089d2",
+          "require_body": true
+        },
+        {
+          "name": "final-cutoff",
+          "block": 93623067,
+          "hash": "0x23572e11f6ef9afe4c27ab3102f15b99fd7277ae5f685ccaef0ae571fe7ee0b6",
+          "state_root": "0x5e1927beb00c17c341d02483fbe81a884cc45af1ecfb673366e685aca4632ec3",
+          "require_body": true
+        },
+        {
+          "name": "supply-api-comparison",
+          "block": 93624315,
+          "hash": "0xfe561c86435707025a2652675585da26382eef247b97aafdc9452c4e78c67c90",
+          "state_root": "0xf841f9a4318d6e544449da8598e10928c16855197bd6f6112ec0b915fe4df24d",
+          "require_body": true
+        }
+      ]
+    },
+    {
+      "shard_id": 1,
+      "require_validator_list": false,
+      "reward_accumulator_at_blocks": [],
+      "checkpoints": [
+        {
+          "name": "original-snapshot",
+          "block": 94978278,
+          "hash": "0xa25d77e72c7f71f2b18847c7f6a9bbed8af42244915bd9175cc247d157b11b9f",
+          "state_root": "0x312a34c0254608c59013bc967c486fe036b784e0d2012b266d5fa4ecc2531760",
+          "require_body": true
+        },
+        {
+          "name": "final-cutoff",
+          "block": 95882100,
+          "hash": "0xf801577a5480175c05a63c8e4e5cf3d2623e1a01bdf176e16b46967405ae02ee",
+          "state_root": "0x312a34c0254608c59013bc967c486fe036b784e0d2012b266d5fa4ecc2531760",
+          "require_body": true
+        }
+      ]
+    }
+  ],
+  "ranges": [
+    {
+      "name": "hip30-recovery-issuance",
+      "shard_id": 0,
+      "start_inclusive": 49152000,
+      "end_inclusive": 93623067
+    },
+    {
+      "name": "post-2023-staking-target-audit",
+      "shard_id": 0,
+      "start_exclusive": 51150847,
+      "end_inclusive": 64847871
+    },
+    {
+      "name": "prehip30-to-post2023-cross-shard",
+      "shard_id": 0,
+      "start_exclusive": 49119231,
+      "end_inclusive": 51150847
+    },
+    {
+      "name": "post2023-to-oct2024-cross-shard",
+      "shard_id": 0,
+      "start_exclusive": 51150847,
+      "end_inclusive": 64847871
+    },
+    {
+      "name": "oct2024-to-sep2025-cross-shard",
+      "shard_id": 0,
+      "start_exclusive": 64847871,
+      "end_inclusive": 78168062
+    },
+    {
+      "name": "sep2025-to-prebloom-cross-shard",
+      "shard_id": 0,
+      "start_exclusive": 78168062,
+      "end_inclusive": 91488254
+    },
+    {
+      "name": "prebloom-to-recovery-cross-shard",
+      "shard_id": 0,
+      "start_exclusive": 91488254,
+      "end_inclusive": 91812527
+    }
+  ]
+}
