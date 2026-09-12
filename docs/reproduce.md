@@ -135,6 +135,34 @@ Run the same command without `-staking` for shard 1.
 
 The independent totals must agree with the component exports.
 
+### Reconstruct the endpoint formula at the cutoff
+
+Run a second complete shard-0 scan at the base checkpoint:
+
+```sh
+bin/actual-supply \
+  -db "$HARMONY_DB_SHARD0" \
+  -root 0xde6ebf84f3cbb6095603dbfc8c33fba8abc9333ca5072a3f9ee97fc1bcb089d2 \
+  -staking \
+  -discover-validators \
+  -output "$OUT/supply/actual-supply-shard0-base.json"
+
+bin/block-reward-accumulator \
+  -db "$HARMONY_DB_SHARD0" \
+  -block 93529887 \
+  > "$OUT/supply/block-reward-base.json"
+
+python3 toolkit/scripts/verify/reconstruct-cutoff-formula.py \
+  --base-accumulator "$OUT/supply/block-reward-base.json" \
+  --base-supply "$OUT/supply/actual-supply-shard0-base.json" \
+  --cutoff-supply "$OUT/supply/actual-supply-shard0.json" \
+  --output "$OUT/supply/cutoff-formula.json"
+```
+
+The script adds the state-derived increase in validator lifetime rewards to the
+base node-local accumulator. It then adds genesis and fixed pre-staking
+issuance. Record the output before comparing it with another audit.
+
 ## 9. Reproduce HIP-30 issuance
 
 ```sh
@@ -207,6 +235,50 @@ python3 toolkit/scripts/forensics/cx-source-audit.py \
 `cx-source-audit.py` requires transaction traces. A receipt is classified as
 rollback leakage only when its source debit occurred inside a failed or
 reverted execution frame.
+
+### Derive historical shard-1 balances when direct tries are unavailable
+
+A direct `account-snapshot` at each historical shard-1 root is preferred. If an
+archive does not contain those tries:
+
+```sh
+python3 toolkit/scripts/forensics/map-cx-receipt-destinations.py \
+  --rpc "$HARMONY_RPC_SHARD1" \
+  --input "$OUT/forensics/shard0-outgoing-receipts.csv" \
+  --destination-shard 1 \
+  --output "$OUT/forensics/shard0-to-shard1-destinations.csv"
+
+python3 toolkit/scripts/forensics/historical-shard1-balance.py \
+  --cutoff-balance-atto "$SHARD1_CUTOFF_BALANCE_ATTO" \
+  --checkpoint-block "$SHARD1_CHECKPOINT_BLOCK" \
+  --cutoff-block 95882100 \
+  --credits "$OUT/forensics/shard0-to-shard1-destinations.csv" \
+  --debits "$OUT/forensics/source-audit.csv" \
+  --output "$OUT/forensics/shard1-checkpoint-balance.json"
+```
+
+The exact equation is:
+
+`historical S1 = cutoff S1 - later S0→S1 credits + later valid S1→S0 debits`.
+
+Resolve `SHARD1_CHECKPOINT_BLOCK` from the same UTC instant as the shard-0
+checkpoint. The derived balance depends on the source audit's
+`valid_source_debit` classifications.
+
+### Recompute the residual chain
+
+Copy `inputs/templates/historical-closure.example.json`, add one entry for each
+checkpoint, and reference your scanner outputs:
+
+```sh
+python3 toolkit/scripts/verify/historical-closure.py \
+  --input "$OUT/forensics/historical-closure-input.json" \
+  --output "$OUT/forensics/historical-closure.json"
+```
+
+This computes every state-versus-formula residual and its change from the
+previous checkpoint. Save the result before comparing it with the original
+audit.
 
 The complete historical command sequence is described in
 [`process-history.md`](process-history.md) and the sanitized `repro/`

@@ -41,17 +41,21 @@ cross-shard receipts.
 or impossible to spend. This repository reports those balances separately
 instead of silently changing the state sum.
 
-## Gross and net bug amounts
+## Peak and net bug amounts
 
-Gross creation records every duplicate or unsupported credit when it happened.
+Gross creation records actual unsupported liquid credits. Peak duplicated
+claim exposure records principal represented twice in state, even when it was
+not paid twice in liquid form.
 
 Net effect records what remains in a later state-versus-formula comparison
 after protocol cleanup and missing credits are included.
 
-For the 2024 max-rate bug, the audit separately records gross duplicate
-payouts, stale pending claims deleted by cleanup, validator rewards counted by
-the formula but not saved, and the measured post-checkpoint net effect. Those
-amounts are withheld during the independent-review period.
+For the 2024 max-rate bug, principal was released to liquid once while failed
+wrapper persistence left the same principal as a stale pending claim. The
+audit separately records peak duplicated claim exposure, stale pending claims
+deleted by cleanup, validator rewards counted by the formula but not saved,
+and the measured post-checkpoint net effect. Those amounts are withheld during
+the independent-review period.
 
 The cleanup did not debit liquid ONE from delegators. It removed stale pending
 undelegation records that duplicated already-paid liquid value.

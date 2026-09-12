@@ -60,11 +60,12 @@ later block, and its node-local reward counter was wrong.
 - Measured recovery issuance exactly.
 - Scanned staking targets and top-level precompile calls.
 - Took state checkpoints around the TopMaxRate cleanup.
-- Separated gross duplicate payouts, stale-liability cleanup, and missing
+- Separated peak duplicated claim exposure, stale-liability cleanup, and missing
   validator rewards.
 
-The 2024 cleanup was clarified: it removed stale pending claims, not liquid
-balances from delegators.
+The 2024 accounting was clarified: age-seven principal was released once, but
+failed wrapper persistence left a stale pending copy. The cleanup removed that
+pending copy, not liquid balances from delegators.
 
 ## September 11: burn audit
 
@@ -93,6 +94,19 @@ extra-mint-recipient reclaim by exact unreturned extra mint.
 
 The complete 2021–2022 operational blacklist was not found. Further work is
 deferred until former DevOps staff or node backups provide the original files.
+
+## September 12: independent-review corrections
+
+- Corrected the max-rate description from repeated liquid payouts to peak
+  duplicated claim exposure.
+- Documented that age-over-seven entries were not paid again; their stale
+  pending claims could instead be redelegated.
+- Added cutoff-formula reconstruction, shard-1 historical-balance derivation,
+  destination-receipt mapping, and historical residual-chain tools.
+- Extended private verification to derive the cutoff gaps from scanner outputs
+  and rerun the historical closure.
+- Added explicit limits for the pre-existing baseline, shard-1 classification,
+  RPC-derived December reconstruction, and report-assigned address labels.
 
 ## Public package extraction
 

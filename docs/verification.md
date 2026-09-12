@@ -19,8 +19,10 @@ Local maintainers with the ignored result and finding files can also run:
 make verify-private
 ```
 
-That command verifies result hashes, recomputes reconciliation identities, and
-checks the unredacted finding provenance.
+That command verifies result hashes and finding provenance, reconstructs the
+cutoff formula from its component inputs, derives the state and claim gaps from
+the cutoff scanner outputs, and reruns the historical residual chain. It does
+not merely check that fields inside one reconciliation JSON add up.
 
 ## Source verification
 
@@ -48,9 +50,16 @@ A full verifier should:
 4. reconcile receipts at both cutoffs;
 5. assemble the component ledger;
 6. run `actual-supply` as an independent sum;
-7. reproduce HIP-30 issuance;
-8. run the native and precompile staking-target audits;
-9. save the deterministic fields and CSV hashes before receiving the original
+7. reconstruct the cutoff formula from a base `blk-rwd-` value and two
+   state-derived validator lifetime-reward sums;
+8. reproduce HIP-30 issuance;
+9. reconstruct the December incident from historical staking state;
+10. audit and classify cross-shard source debits;
+11. directly scan historical shard-1 state, or derive it from later
+    cross-shard credits and valid debits;
+12. run the historical residual chain;
+13. run the native and precompile staking-target audits;
+14. save the deterministic fields and CSV hashes before receiving the original
    audit results.
 
 The original result manifest will be published after the independent-review
@@ -89,6 +98,11 @@ When published, each result is classified as:
 
 Only the first two are chain-derived. Curated and policy files must retain
 source hashes and extraction notes.
+
+The max-rate peak duplicated-claim decomposition remains curated external
+evidence derived from Harmony operations artifacts. The independently
+recomputed state-versus-formula residual verifies its net effect, not every
+row of that peak decomposition.
 
 ## Public checkpoint identifiers
 

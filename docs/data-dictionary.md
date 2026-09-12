@@ -52,6 +52,28 @@ claim components.
 - `balance_delta_atto`: signed liquid change.
 - `change_type`: created, changed, or deleted.
 
+## Historical shard-1 derivation JSON
+
+- `cutoff_balance_atto`: directly measured shard-1 cutoff balance.
+- `later_shard0_to_shard1_credits_atto`: destination credits after the
+  historical checkpoint.
+- `later_valid_shard1_to_shard0_debits_atto`: source debits after the
+  historical checkpoint.
+- `derived_historical_balance_atto`: cutoff balance minus later credits plus
+  later valid debits.
+
+The valid-debit amount depends on transaction-trace classification and is
+reported as such.
+
+## Historical closure JSON
+
+- `global_state_atto`: shard-0 claims plus shard-1 claims.
+- `formula_atto`: genesis, pre-staking rewards, and `blk-rwd-`.
+- `adjustments_atto`: named direct-state issuance or incident components
+  already known at the checkpoint.
+- `residual_atto`: state minus formula minus named adjustments.
+- `change_from_previous_atto`: residual change between adjacent checkpoints.
+
 ## Outgoing and replay receipt CSVs
 
 Important fields include:
@@ -108,11 +130,11 @@ The inputs under `inputs/curated/` retain:
 
 - Bech32 as the primary address form;
 - equivalent hexadecimal form where available;
-- incident/report role;
+- incident and `report_assigned_role`;
 - source citation and source hash.
 
-An address label is not promoted from “suspected” to “perpetrator” without an
-explicit source statement.
+An address role records the source report's wording. It is not an independent
+identity or legal finding by this audit.
 
 ## Treasury scenario fields
 

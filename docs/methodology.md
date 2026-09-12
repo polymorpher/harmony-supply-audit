@@ -77,6 +77,13 @@ block-reward counters for the same block hash and state root.
 
 The counter is node-local metadata, not consensus state.
 
+The exact cutoff counter is reconstructed as:
+
+`base blk-rwd + (cutoff validator lifetime rewards - base validator lifetime rewards)`
+
+`reconstruct-cutoff-formula.py` performs this calculation from one
+`block-reward-accumulator` output and two complete `actual-supply` outputs.
+
 ## 7. Localize historical differences
 
 `historical-state-diff` compares state roots. Historical staking exports add
@@ -92,6 +99,30 @@ distinguish:
 
 Only canonical receipts with proved reverted source debit are classified as
 rollback-created ONE.
+
+The preferred shard-1 historical measurement is a direct account-trie scan at
+the matching historical root. When that root is unavailable, the audit derives
+the historical balance from the measured cutoff balance:
+
+`S1(t) = S1(cutoff) - later S0→S1 credits + later valid S1→S0 debits`
+
+`map-cx-receipt-destinations.py` maps outgoing receipts to exact shard-1
+destination blocks. `historical-shard1-balance.py` then applies the equation.
+The result depends on the source audit's `valid_source_debit` labels.
+
+The residual at each checkpoint is:
+
+`S0 claims + S1 claims - genesis - pre-staking rewards - blk-rwd`
+
+minus named direct-state adjustments such as HIP-30 recovery, the reconstructed
+December incident, and cumulative rollback leakage.
+
+`historical-closure.py` performs this calculation at every checkpoint and
+checks the change between checkpoints. The residual chain is an independent
+cross-check of shard-0-sourced leakage. It is not an independent check of
+shard-1-sourced leakage because the shard-1 derivation uses the same source
+classification; transaction traces are the primary evidence for that
+direction.
 
 ## 8. Count HIP-30 recovery issuance
 
@@ -117,13 +148,16 @@ The reconstructed amount is withheld during independent review.
 
 The audit separates:
 
-- gross duplicate payouts;
+- peak duplicated claim exposure;
 - stale pending claims deleted at cleanup;
 - validator rewards counted by the formula but not saved;
 - net effect in the state-versus-formula comparison.
 
-The cleanup removed stale pending records. It did not debit liquid ONE from a
-delegator account.
+At age seven, principal was released to liquid once, but failed validator
+wrapper persistence could leave the same principal as a pending claim. After
+age seven, the MaxRate rule suppressed another liquid payout. The stale claim
+could still be redelegated. Cleanup removed remaining stale pending records; it
+did not debit liquid ONE from a delegator account.
 
 ## 10. Audit burns and address lists
 

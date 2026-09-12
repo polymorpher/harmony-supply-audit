@@ -19,6 +19,26 @@ This is not unexplained minting. It may include protocol fee destruction,
 contract balances left on retired shards, and smaller accounting effects. The
 components have not been fully separated.
 
+The later residual chain accounts for changes after this checkpoint. It does
+not prove that all earlier positive and negative components were separately
+identified or that no earlier offsetting creation occurred.
+
+## Historical shard-1 derivation
+
+The preferred historical shard-1 value is a direct full account-trie scan.
+Where the old trie was unavailable, the audit derived it from the cutoff
+balance and later cross-shard flows.
+
+That derivation uses the same `valid_source_debit` classifications as the
+rollback audit. Therefore the residual chain is not an independent
+confirmation of shard-1-sourced rollback leakage; source transaction traces
+are the primary evidence for that direction.
+
+A separate RPC check summed only addresses that were still positive at the
+cutoff. It was lower than the derived historical value because it was not a
+complete historical address census. It must not be described as an
+independent full-state sum.
+
 ## Staking-precompile internal calls
 
 The native staking audit and top-level calls to precompile `0xfc` found no
@@ -63,6 +83,12 @@ historical staking RPC state at block `51,085,312`.
 The script and result are preserved, but a local database-only implementation
 of that particular reconstruction is not yet included.
 
+The calculation reconstructs payments from historical pending entries and
+protocol epoch rules. It does not observe every epoch-boundary liquid credit
+individually. Agreement with Harmony's published incident amount and direct
+checks of selected affected accounts are corroborating evidence, not a second
+fully independent method.
+
 ## Node-local reward counter
 
 `blk-rwd-<height>` is stored in each node's local database and is not committed
@@ -80,6 +106,17 @@ state.
 
 The uploaded investigation reports are not republished here. Their titles and
 hashes are recorded where their extracted addresses are used.
+
+The public curated input identifies addresses only as
+`report-identified`. This is source attribution, not an independent legal or
+identity finding by this audit.
+
+## Long-pending cross-shard receipts
+
+Supported source-debited receipts that were never applied at the destination
+are reported separately from state-resident balances. Including them in the
+claim ledger is an explicit migration treatment, not proof that they are
+ordinary circulating balances.
 
 ## Migration policy
 
