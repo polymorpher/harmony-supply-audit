@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "file": "cx-history-ranges.manifest",
+      "sha256": "0c1f390282501bcff2bb56e6e6dceb6db9992331c23a8ddc238a3a80967828c2"
+    },
+    {
+      "file": "hip30-incident-checkpoints.manifest",
+      "sha256": "dd808b643b079f44d5a69c8ef7f517829bb2c7708de330a04ccd0b0395d8fe37"
+    },
+    {
+      "file": "october-2024-checkpoint.manifest",
+      "sha256": "a67681958bdb1ad3818497d278dfe8579d4dead9e3d2ea94cc210fe6dede7c73"
+    },
+    {
+      "file": "september-2025-checkpoint.manifest",
+      "sha256": "9fb98c95cad7ed94d3576ee1599cf49e3a6d4761ad129e87d1d3dfa32fd8ead4"
+    },
+    {
+      "file": "staking-boundary-checkpoints.manifest",
+      "sha256": "3566abf9374f5b62bbbdded229d6d94aee08ca3def788bdbae3727433e3abf3b"
+    }
+  ],
+  "schema_version": 1
+}

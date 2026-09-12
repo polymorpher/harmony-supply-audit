@@ -1,0 +1,72 @@
+{
+  "files": [
+    {
+      "file": "run-recovery-root-scan.sh",
+      "sanitized_sha256": "8cb1e18b3768e28e17265c754abd13d6d04feda950682579b7348b6140ad10f7",
+      "source_sha256": "deb809fa36c14bd62b2d67caa14d4b54b7fa8c820feab95744109d4ea0427ea7"
+    },
+    {
+      "file": "read-recovery-reward.sh",
+      "sanitized_sha256": "76b9c43db9f676b17f450b0727a7cda7a0e0eca34bd73cbe066279a48243b4b5",
+      "source_sha256": "d0f06ae62e8cf82a152e8f404de14141163d7241d47f9f9706accfbdd6f0bc41"
+    },
+    {
+      "file": "run-archive-checkpoint-scan.sh",
+      "sanitized_sha256": "6cf25ae6f2b62d886e4e1eb200b2902b0bdcf95b7f8955219d30b5a6e4b31ee6",
+      "source_sha256": "633d4105b5064f122559de8cdd14b52832da751ad67365fb832771b09f199b44"
+    },
+    {
+      "file": "run-archive-scan-batch.sh",
+      "sanitized_sha256": "a66f2e8ffda9dffadf37a2db1fbffa65dac86a8cbb032e543a7053f5c9926ea5",
+      "source_sha256": "c0c3b9198ccdf26f5fe4a99e3dc98a42de038e670c046b8dc77f420819f34d5b"
+    },
+    {
+      "file": "run-archive-state-diff.sh",
+      "sanitized_sha256": "40b36867c2801ab7c5a150e4d29cb80e37ad7887616c5b505f671d3c0ff8f557",
+      "source_sha256": "d583410620d71b46aed56b95e5f7d58b2d9b6fa1bf09ed0d24e809c326a66f9c"
+    },
+    {
+      "file": "run-archive-outgoing-cx-scan.sh",
+      "sanitized_sha256": "3c5e04b99c61633fb13fb2972264504746ad5c2fb6b423f30b30c33c39c1d275",
+      "source_sha256": "d1396244aecb9b317bf98b20d6d8cf4d4ec2517ca6449eeea8c0817331f8319b"
+    },
+    {
+      "file": "run-archive-cx-replay-scan.sh",
+      "sanitized_sha256": "3d7d621030c41d0d6d8954d079bf9026052fb855e4004fb25d13aef427cc8819",
+      "source_sha256": "61a56006ed879c847d38468cfe15991b35274843313a578c871567ea84156dd8"
+    },
+    {
+      "file": "run-archive-cx-replay-batch.sh",
+      "sanitized_sha256": "49246cc646b5d7b858d2781940cc0cba2ff02af9719d0aabc5fedb7127ac99be",
+      "source_sha256": "50990284fddf8ef60a34f7ce939aef94bf6f0198acad8ed021752e852a4fc1c6"
+    },
+    {
+      "file": "run-archive-hip30-recovery-issuance.sh",
+      "sanitized_sha256": "8f7b995d2046c069916ee9dfaa4b9ea0627d30350eafd4f45a2f72815401d3c5",
+      "source_sha256": "5ffb07c5af3488224990e45a440bd85349a7e2bf68dd5d023724acd33ba85a1a"
+    },
+    {
+      "file": "run-archive-hip30-recovery-window.sh",
+      "sanitized_sha256": "d2faa162c6a82ca32b540659174b63e953ed38094142d3aac05c8b40bb9808e1",
+      "source_sha256": "af5e2ae28d4ddc22d75066632de933c0ca1ce8b92402c59c46f9fe223e1c4841"
+    },
+    {
+      "file": "run-archive-hip30-recovery-intervals.sh",
+      "sanitized_sha256": "0b85084d33868ec357d816f2d31ec52789f53ba28e59ecdf49f8287753b110dc",
+      "source_sha256": "1efc84c5752668fdfc7add99de82356ab0ffee0392ae2e3cb3042e1e9965370b"
+    },
+    {
+      "file": "run-archive-staking-target-audit.sh",
+      "sanitized_sha256": "9e3c86cb81444146c819ad273004065d7b4d533f7ccf5e399cb8592613048bae",
+      "source_sha256": "114438499f83d3d18f8d6cfc17d9ddbfce8de2f49021d8b20f4a6f14c6d7cd17"
+    },
+    {
+      "file": "run-archive-staking-precompile-target-audit.sh",
+      "sanitized_sha256": "d1820da22c83df25410422fd5a4161669d7ec77fe1f60d9e5b0bf5f881ab645c",
+      "source_sha256": "4426986a584a3b9381e17d3f3556d370c4906dab8ef2b1496e98f5962903a766"
+    }
+  ],
+  "note": "Published wrappers are sanitized templates, not byte-identical as-run files.",
+  "schema_version": 1,
+  "source_root": "local/harmony-balance-accounting"
+}
