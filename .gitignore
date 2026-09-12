@@ -1,0 +1,45 @@
+.DS_Store
+.cursor/
+.env
+.env.*
+.venv/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.log
+*.partial
+*.download
+*.prof
+*.test
+*.out
+*.so
+*.dylib
+
+# Local dependencies, binaries, run outputs, and databases are not source.
+third_party/
+bin/
+dist/
+artifacts/*
+!artifacts/README.md
+data/
+work/
+go.work
+go.work.sum
+harmony_db_*
+*.leveldb/
+*.ldb
+*.sst
+LOCK
+LOG.old
+
+# Large evidence belongs in immutable release assets.
+results/**/*.csv.gz
+results/**/*.tar
+results/**/*.tar.gz
+
+# Pre-publication embargo. These local files contain numerical findings.
+docs/findings/
+results/2026-09-11/
+manifests/results.sha256
+manifests/releases/2026-09-11.json
+embargoed/
