@@ -1,0 +1,26 @@
+name: test
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  toolkit:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.2"
+          cache-dependency-path: toolkit/go.sum
+      - name: Build, test, and verify
+        run: make test
+      - name: Check public package hygiene
+        run: make check-public
+      - name: Check manifests are current
+        run: |
+          make manifest
+          git diff --exit-code -- manifests/source.sha256
