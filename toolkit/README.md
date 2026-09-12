@@ -36,11 +36,13 @@ The binaries are written to `bin/`.
 
 - `supply/`: assemble factual component ledgers.
 - `forensics/`: historical staking, receipt-source, exploit-flow, and
-  undelegation-mint analysis.
+  undelegation-mint analysis, including shard-1 historical-balance derivation
+  and destination-receipt mapping.
 - `addresses/`: join address lists to an exact cutoff ledger.
 - `cutoff/`: verify canonical intervals, changed state, created accounts, and
   pending receipts.
-- `verify/`: fast checks over locally generated result metadata.
+- `verify/`: cutoff-formula reconstruction, historical residual closure, and
+  checks over locally generated result metadata.
 
 Allocation thresholds and treasury destination logic are intentionally kept in
 the separate `harmony-migration` project.

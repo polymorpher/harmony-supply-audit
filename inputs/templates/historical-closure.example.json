@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "genesis_atto": {
+    "path": "../supply/cutoff-formula.json",
+    "field": "genesis_atto"
+  },
+  "pre_staking_rewards_atto": {
+    "path": "../supply/cutoff-formula.json",
+    "field": "pre_staking_rewards_atto"
+  },
+  "checkpoints": [
+    {
+      "name": "replace-with-checkpoint-name",
+      "shard0_claims_atto": {
+        "path": "../supply/shard0-supply.json",
+        "field": "account_and_staking_claims_atto"
+      },
+      "shard1_claims_atto": {
+        "path": "shard1-balance.json",
+        "field": "derived_historical_balance_atto"
+      },
+      "block_reward_accumulator_atto": {
+        "path": "../supply/block-reward.json",
+        "field": "reward_atto"
+      },
+      "adjustments_atto": {
+        "hip30_recovery": {
+          "path": "../supply/hip30-recovery.json",
+          "field": "recovery_issuance_atto"
+        },
+        "reconstructed_incident": {
+          "path": "incident.json",
+          "field": "total_atto"
+        },
+        "rollback_leakage": {
+          "path": "rollback-summary.json",
+          "field": "rollback_leakage_atto"
+        }
+      }
+    }
+  ]
+}
