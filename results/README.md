@@ -19,6 +19,9 @@ Local maintainers with the ignored result files can run:
 make verify-private
 ```
 
+This derives the cutoff gaps from scanner outputs and a reconstructed endpoint
+formula, then reruns the historical residual chain.
+
 ## Large release assets
 
 Large evidence and its release manifest remain local during the embargo.
