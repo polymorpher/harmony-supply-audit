@@ -1,18 +1,18 @@
-address_bech32,address_hex,incident,role,report_evidence
-one19hfc64sw564mnlf4d8hpmmjlgwwcnzcs3q9ctl,0x2dd38d560ea6abb9fd3569ee1dee5f439d898b10,WF theft 2021-10-31,perpetrator holding address,Report 1 victim table; Report 2 lines 43-48
-one1l0j8qaxk5g9h4wcpky22y2ql7mk0fz0jfkaxzw,0xfbe47074d6a20b7abb01b114a2281ff6ecf489f2,TT theft 2021-11-02,perpetrator holding address,Report 1 victim table; Report 2 lines 43-50
-one1mm2nqznrgxlyxnvru6e0df6d3tr73ypfh2a2kw,0xded5300a6341be434d83e6b2f6a74d8ac7e89029,RG theft 2021-11-11,perpetrator holding address,Report 1 victim table; Report 2 lines 43-52
-one10zeukj0026lg2cmfly3juwzru9h4t62sk6fnhh,0x78b3cb49ef56be856369f9232e3843e16f55e950,DK theft 2021-11-11,deprecated perpetrator intermediary 1,Report 2 lines 43-55
-one1ju99keagct63ke2wfmn49aj6jjwzmheeh0w0qx,0x970a5b67a8c2f51b654e4ee752f65a949c2ddf39,DK theft 2021-11-11,deprecated perpetrator intermediary 2,Report 2 lines 43-55
-one14gc9a4p3fu5sdvfggh7dk7wla3e3r0rcqhpgfd,0xaa305ed4314f2906b12845fcdb79dfec7311bc78,DK theft 2021-11-11,perpetrator holding address 1,Report 2 lines 43-59
-one1nntfj6t5pjxmnqq2yj7adm03plsda9j6tqx8zj,0x9cd69969740c8db9800a24bdd6edf10fe0de965a,DK theft 2021-11-11,perpetrator holding address 2,Report 1 victim table; Report 2 lines 43-60
-one1xel484ydcfevr2jngnh8mrh48s9tqk3sqqjr0f,0x367f53d48dc272c1aa5344ee7d8ef53c0ab05a30,SB theft 2021-11-25,perpetrator holding address,Report 1 victim table; Report 2 lines 43-62
-one1kg7ezmclnvg9g4p8360ldh5qzfapndmawfeenn,0xb23d916f1f9b105454278e9ff6de80127a19b77d,AL theft 2021-12-14,perpetrator holding address,Report 1 victim table; Report 2 lines 43-64
-one1ksku7tue735dp72m5l3jxzr6a93y45z77ppuh5,0xb42dcf2f99f468d0f95ba7e323087ae9624ad05e,JT and MN thefts 2021-12-30 and 2022-01-15,shared perpetrator holding address,Report 2 line 15 and lines 43-66; Report 3 line 11
-one19cxrk72qul2hd247rrukrf8k8pmfgvweq7ph0v,0x2e0c3b7940e7d576aabe18f961a4f638769431d9,MN theft 2022-01-15,second perpetrator holding address,Report 3 line 11
-one1shg6gksuwpjylwzajqm8k879ljpufh90muk3u9,0x85d1a45a1c70644fb85d90367b1fc5fc83c4dcaf,BL theft 2022-01-15,perpetrator holding and bridge address,Report 3 lines 12 and 22-24
-one1vzxswhlgj2fstn69ev526m56cxwunnkg899nxf,0x608d075fe8929305cf45cb28ad6e9ac19dc9cec8,MC theft 2022-01-10,perpetrator first hop,Report 3 line 14
-one1z9sj6lgwex5uk4ch626nkcvzakjvswyw8s43n9,0x11612d7d0ec9a9cb5717d2b53b6182eda4c8388e,MC theft 2022-01-10,perpetrator second hop and Binance deposit source,Report 3 lines 14 and 16-18
-one1yd23jj6etjaan6ltk4y96wwy3zd0wd9kyprehn,0x2355194b595cbbd9ebebb5485d39c4889af734b6,Ogre theft 2022-03-25,hacker address 1,Report 4 lines 21-24 and 141-143
-one135ae66z6py36f2kg7gv5zwwnam56rzdcymfp76,0x8d3b9d685a0923a4aac8f2194139d3eee9a189b8,Ogre theft 2022-03-25,hacker address 2,Report 4 lines 81-89 and 141
-one158yzzcqv73de8jn6rrn3eeg82488pt0s6ear3e,0xa1c821600cf45b93ca7a18e71ce507554e70adf0,Ogre theft 2022-03-25,hacker address 3,Report 4 lines 81-89 and 141
+address_bech32,address_hex,incident,report_assigned_role,report_evidence
+one19hfc64sw564mnlf4d8hpmmjlgwwcnzcs3q9ctl,0x2dd38d560ea6abb9fd3569ee1dee5f439d898b10,WF theft 2021-10-31,report-identified perpetrator holding address,Report 1 victim table; Report 2 lines 43-48
+one1l0j8qaxk5g9h4wcpky22y2ql7mk0fz0jfkaxzw,0xfbe47074d6a20b7abb01b114a2281ff6ecf489f2,TT theft 2021-11-02,report-identified perpetrator holding address,Report 1 victim table; Report 2 lines 43-50
+one1mm2nqznrgxlyxnvru6e0df6d3tr73ypfh2a2kw,0xded5300a6341be434d83e6b2f6a74d8ac7e89029,RG theft 2021-11-11,report-identified perpetrator holding address,Report 1 victim table; Report 2 lines 43-52
+one10zeukj0026lg2cmfly3juwzru9h4t62sk6fnhh,0x78b3cb49ef56be856369f9232e3843e16f55e950,DK theft 2021-11-11,report-identified deprecated perpetrator intermediary 1,Report 2 lines 43-55
+one1ju99keagct63ke2wfmn49aj6jjwzmheeh0w0qx,0x970a5b67a8c2f51b654e4ee752f65a949c2ddf39,DK theft 2021-11-11,report-identified deprecated perpetrator intermediary 2,Report 2 lines 43-55
+one14gc9a4p3fu5sdvfggh7dk7wla3e3r0rcqhpgfd,0xaa305ed4314f2906b12845fcdb79dfec7311bc78,DK theft 2021-11-11,report-identified perpetrator holding address 1,Report 2 lines 43-59
+one1nntfj6t5pjxmnqq2yj7adm03plsda9j6tqx8zj,0x9cd69969740c8db9800a24bdd6edf10fe0de965a,DK theft 2021-11-11,report-identified perpetrator holding address 2,Report 1 victim table; Report 2 lines 43-60
+one1xel484ydcfevr2jngnh8mrh48s9tqk3sqqjr0f,0x367f53d48dc272c1aa5344ee7d8ef53c0ab05a30,SB theft 2021-11-25,report-identified perpetrator holding address,Report 1 victim table; Report 2 lines 43-62
+one1kg7ezmclnvg9g4p8360ldh5qzfapndmawfeenn,0xb23d916f1f9b105454278e9ff6de80127a19b77d,AL theft 2021-12-14,report-identified perpetrator holding address,Report 1 victim table; Report 2 lines 43-64
+one1ksku7tue735dp72m5l3jxzr6a93y45z77ppuh5,0xb42dcf2f99f468d0f95ba7e323087ae9624ad05e,JT and MN thefts 2021-12-30 and 2022-01-15,report-identified shared perpetrator holding address,Report 2 line 15 and lines 43-66; Report 3 line 11
+one19cxrk72qul2hd247rrukrf8k8pmfgvweq7ph0v,0x2e0c3b7940e7d576aabe18f961a4f638769431d9,MN theft 2022-01-15,report-identified second perpetrator holding address,Report 3 line 11
+one1shg6gksuwpjylwzajqm8k879ljpufh90muk3u9,0x85d1a45a1c70644fb85d90367b1fc5fc83c4dcaf,BL theft 2022-01-15,report-identified perpetrator holding and bridge address,Report 3 lines 12 and 22-24
+one1vzxswhlgj2fstn69ev526m56cxwunnkg899nxf,0x608d075fe8929305cf45cb28ad6e9ac19dc9cec8,MC theft 2022-01-10,report-identified perpetrator first hop,Report 3 line 14
+one1z9sj6lgwex5uk4ch626nkcvzakjvswyw8s43n9,0x11612d7d0ec9a9cb5717d2b53b6182eda4c8388e,MC theft 2022-01-10,report-identified perpetrator second hop and Binance deposit source,Report 3 lines 14 and 16-18
+one1yd23jj6etjaan6ltk4y96wwy3zd0wd9kyprehn,0x2355194b595cbbd9ebebb5485d39c4889af734b6,Ogre theft 2022-03-25,report-identified hacker address 1,Report 4 lines 21-24 and 141-143
+one135ae66z6py36f2kg7gv5zwwnam56rzdcymfp76,0x8d3b9d685a0923a4aac8f2194139d3eee9a189b8,Ogre theft 2022-03-25,report-identified hacker address 2,Report 4 lines 81-89 and 141
+one158yzzcqv73de8jn6rrn3eeg82488pt0s6ear3e,0xa1c821600cf45b93ca7a18e71ce507554e70adf0,Ogre theft 2022-03-25,report-identified hacker address 3,Report 4 lines 81-89 and 141

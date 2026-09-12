@@ -19,13 +19,16 @@ It contains 71 lines and 70 unique valid addresses. The duplicate is
 
 This is not the complete 2021–2022 wallet-theft blacklist.
 
-## Wallet-theft perpetrator addresses
+## Report-identified wallet-theft addresses
 
 `reported-wallet-theft-perpetrators.txt` contains 17 Harmony addresses that
 the supplied reports explicitly labeled perpetrator- or hacker-controlled.
+The filename preserves the original extraction name; this repository is
+recording the reports' labels, not making an independent identity or legal
+finding.
 
 `reported-wallet-theft-perpetrators.csv` records the role and report
-reference. It deliberately excludes victims, a suspect-only validator,
+reference as `report_assigned_role`. It deliberately excludes victims, a suspect-only validator,
 contracts and exchanges, Ethereum-only contextual addresses, and merely
 suspicious post-Tornado addresses.
 
