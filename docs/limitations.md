@@ -31,13 +31,34 @@ balance and later cross-shard flows.
 
 That derivation uses the same `valid_source_debit` classifications as the
 rollback audit. Therefore the residual chain is not an independent
-confirmation of shard-1-sourced rollback leakage; source transaction traces
-are the primary evidence for that direction.
+confirmation of shard-1-sourced rollback leakage; compatible source
+transaction traces or separately recorded canonical source-debit evidence are
+the primary evidence for that direction.
 
 A separate RPC check summed only addresses that were still positive at the
 cutoff. It was lower than the derived historical value because it was not a
 complete historical address census. It must not be described as an
 independent full-state sum.
+
+## Historical transaction replay
+
+`debug_traceTransaction` executes historical transactions with the node's
+current binary. Epoch selection does not revert non-fork-gated implementation
+changes.
+
+Harmony commit `31752f21aa` changed delegated precompile contract context after
+some audited transactions had already executed. Current archive binaries can
+therefore return a failed replay for a transaction whose stored receipt
+succeeded. Such a trace is labeled `replay_incompatible` and is not used by
+itself to classify the source debit.
+
+Compatible historical execution is preferred. When it is unavailable,
+independent canonical source-state evidence may resolve the row, but its
+artifact reference and SHA-256 must be recorded. A result derived from that
+evidence must not be described as reproduced by the incompatible trace.
+Debit absence alone is labeled `source_debit_absent`; it is not promoted to the
+mechanism-specific `rollback_leak` classification without compatible failed-frame
+evidence.
 
 ## Staking-precompile internal calls
 
