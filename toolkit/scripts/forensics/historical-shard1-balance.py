@@ -70,12 +70,16 @@ def sum_later_valid_debits(path, checkpoint_block, cutoff_block):
     with path.open(newline="") as source:
         for row in csv.DictReader(source):
             source_shard = integer(
-                row, ("signed_source_shard", "source_shard"), path
+                row,
+                ("audit_source_shard", "signed_source_shard", "source_shard"),
+                path,
             )
             if source_shard != 1 or row.get("classification") != "valid_source_debit":
                 continue
             source_block = integer(
-                row, ("signed_source_block", "source_block"), path
+                row,
+                ("audit_source_block", "signed_source_block", "source_block"),
+                path,
             )
             if checkpoint_block < source_block <= cutoff_block:
                 count += 1
