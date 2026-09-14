@@ -84,20 +84,30 @@ def rpc(url, method, params):
 
 def inspect_trace(root):
     precompile_calls = 0
+    completed_precompile_calls = 0
     failed_precompile_paths = 0
 
     def visit(node, failed_ancestor):
-        nonlocal precompile_calls, failed_precompile_paths
+        nonlocal precompile_calls, completed_precompile_calls
+        nonlocal failed_precompile_paths
         failed = failed_ancestor or bool(node.get("error"))
-        if node.get("to", "").lower() == CX_PRECOMPILE:
+        if (
+            node.get("to", "").lower() == CX_PRECOMPILE
+            and node.get("type") in ("CALL", "CALLCODE", "DELEGATECALL", "STATICCALL")
+        ):
             precompile_calls += 1
-            if failed:
-                failed_precompile_paths += 1
+            # A rejected invocation (including the per-transaction duplicate
+            # guard) did not create a receipt. Only a locally completed call
+            # can supply evidence of a debit subsequently reverted by a parent.
+            if not node.get("error"):
+                completed_precompile_calls += 1
+                if failed_ancestor:
+                    failed_precompile_paths += 1
         for child in node.get("calls", []):
             visit(child, failed)
 
     visit(root, False)
-    return precompile_calls, failed_precompile_paths
+    return precompile_calls, completed_precompile_calls, failed_precompile_paths
 
 
 def main():
@@ -173,6 +183,7 @@ def main():
             receipt_status = ""
             trace = {}
             precompile_calls = int(source_to == CX_PRECOMPILE)
+            completed_precompile_calls = ""
             failed_paths = 0
             classification = "valid_source_debit"
         else:
@@ -185,13 +196,22 @@ def main():
                 "debug_traceTransaction",
                 [transaction["hash"], {"tracer": "callTracer", "timeout": "60s"}],
             )
-            precompile_calls, failed_paths = inspect_trace(trace)
-            if failed_paths:
-                classification = "rollback_leak"
-            elif precompile_calls:
-                classification = "valid_source_debit"
-            else:
+            (
+                precompile_calls,
+                completed_precompile_calls,
+                failed_paths,
+            ) = inspect_trace(trace)
+            trace_status = 0 if trace.get("error") else 1
+            # Do not attach a receipt to an arbitrary call when the trace has
+            # no completed invocation, or more than one possible producer.
+            # A replay with a different outcome from the stored receipt is
+            # not evidence of the original execution, regardless of its calls.
+            if receipt_status != trace_status or completed_precompile_calls != 1:
                 classification = "unclassified"
+            elif failed_paths:
+                classification = "rollback_leak"
+            else:
+                classification = "valid_source_debit"
         totals[classification] += amount
         output_rows.append(
             {
@@ -204,6 +224,7 @@ def main():
                 "source_input_selector": transaction["input"][:10],
                 "trace_root_error": trace.get("error", ""),
                 "precompile_call_count": precompile_calls,
+                "completed_precompile_call_count": completed_precompile_calls,
                 "failed_precompile_path_count": failed_paths,
                 "classification": classification,
             }

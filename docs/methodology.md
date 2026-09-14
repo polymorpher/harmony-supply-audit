@@ -41,6 +41,10 @@ added again.
 `cross-shard-supply` reads canonical source receipt groups and destination
 lookup records at explicit shard cutoffs.
 
+A failed destination lookup read is not evidence that a receipt is pending.
+After a failed read, the scanner verifies that the key is absent; if the key
+exists or its existence cannot be checked, it aborts without publishing totals.
+
 A receipt is included as pending only when:
 
 1. the source debit is within the source cutoff;
@@ -99,6 +103,25 @@ distinguish:
 
 Only canonical receipts with proved reverted source debit are classified as
 rollback-created ONE.
+
+For traced transactions, an invocation of the cross-shard precompile that
+itself returned an error did not create a receipt. In particular, a rejected
+second invocation must not turn a successful first debit into rollback leakage.
+The classifier requires exactly one locally completed precompile invocation;
+it counts rollback evidence only when an ancestor of that invocation failed.
+No completed invocation or multiple possible producers remain `unclassified`.
+These checks do not replace matching the canonical receipt to the source
+transaction and its transfer payload in the surrounding forensic workflow.
+
+The trace's root success/failure must agree with the stored transaction receipt;
+a mismatch leaves the row `unclassified`. Matching statuses alone do not prove
+equivalence of the internal execution.
+
+Historical re-execution must also reproduce the implementation used at the
+source height. An archive replay that rejects the precompile despite an existing
+canonical source receipt is conflicting evidence, not proof of the original
+debit. Resolve such rows using compatible historical execution or independent
+source-debit evidence; do not interpret `unclassified` as a zero-value adjustment.
 
 The preferred shard-1 historical measurement is a direct account-trie scan at
 the matching historical root. When that root is unavailable, the audit derives

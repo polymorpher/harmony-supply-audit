@@ -90,6 +90,14 @@ Important fields include:
 `rollback_leak` means the destination receipt was accepted while the matching
 source debit occurred inside execution that reverted.
 
+`precompile_call_count` includes rejected call-family invocations, but not
+`SELFDESTRUCT` transfers to the precompile address.
+`completed_precompile_call_count` counts invocations without a local error.
+`failed_precompile_path_count` counts those completed invocations whose ancestor
+frame failed, not invocations that were rejected before creating a receipt.
+For direct source debits, the existing untraced classification path is unchanged;
+the completed count is blank because no trace was inspected.
+
 ## Staking-target audit CSVs
 
 Native staking audit:
