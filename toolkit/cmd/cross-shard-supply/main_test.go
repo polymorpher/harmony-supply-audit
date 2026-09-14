@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"math/big"
@@ -15,21 +16,23 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
-type failingLookupDB struct {
+type failingReadDB struct {
 	ethdb.Database
+	getKey []byte
 	getErr error
+	hasKey []byte
 	hasErr error
 }
 
-func (db failingLookupDB) Get(key []byte) ([]byte, error) {
-	if len(key) == len(cxLookupPrefix)+common.HashLength && string(key[:len(cxLookupPrefix)]) == string(cxLookupPrefix) {
+func (db failingReadDB) Get(key []byte) ([]byte, error) {
+	if bytes.Equal(key, db.getKey) {
 		return nil, db.getErr
 	}
 	return db.Database.Get(key)
 }
 
-func (db failingLookupDB) Has(key []byte) (bool, error) {
-	if db.hasErr != nil {
+func (db failingReadDB) Has(key []byte) (bool, error) {
+	if db.hasErr != nil && bytes.Equal(key, db.hasKey) {
 		return false, db.hasErr
 	}
 	return db.Database.Has(key)
@@ -77,11 +80,28 @@ func receiptFixture(t *testing.T) (ethdb.Database, ethdb.Database, common.Hash) 
 
 func TestSumReceiptsDestinationLookup(t *testing.T) {
 	readErr := errors.New("destination I/O failure")
-	for _, name := range []string{"spent", "missing", "empty", "after cutoff", "noncanonical", "read failure", "existence failure", "closed LevelDB", "malformed lookup"} {
+	for _, name := range []string{
+		"spent",
+		"missing",
+		"empty",
+		"after cutoff",
+		"missing cutoff",
+		"noncanonical",
+		"lookup read failure",
+		"lookup existence failure",
+		"destination canonical read failure",
+		"destination canonical existence failure",
+		"destination canonical missing",
+		"destination canonical malformed",
+		"destination canonical zero",
+		"closed LevelDB",
+		"malformed lookup",
+	} {
 		t.Run(name, func(t *testing.T) {
 			source, destination, txHash := receiptFixture(t)
 			cutoff := uint64(20)
-			wantPending, wantError := false, false
+			cutoffs := map[uint32]uint64{1: cutoff}
+			wantPending, wantError, wantReadError := false, false, false
 			switch name {
 			case "missing":
 				if err := destination.Delete(cxLookupKey(txHash)); err != nil {
@@ -92,17 +112,61 @@ func TestSumReceiptsDestinationLookup(t *testing.T) {
 				if err := destination.Put(cxLookupKey(txHash), nil); err != nil {
 					t.Fatal(err)
 				}
-				wantPending = true
+				wantError = true
 			case "after cutoff":
-				cutoff, wantPending = 19, true
+				cutoffs[1], wantPending = 19, true
+			case "missing cutoff":
+				delete(cutoffs, 1)
+				wantError = true
 			case "noncanonical":
 				rawdb.WriteCanonicalHash(destination, common.HexToHash("0x9999"), 20)
 				wantPending = true
-			case "read failure":
-				destination = failingLookupDB{Database: destination, getErr: readErr}
+			case "lookup read failure":
+				destination = failingReadDB{
+					Database: destination,
+					getKey:   cxLookupKey(txHash),
+					getErr:   readErr,
+				}
+				wantError, wantReadError = true, true
+			case "lookup existence failure":
+				destination = failingReadDB{
+					Database: destination,
+					getKey:   cxLookupKey(txHash),
+					getErr:   readErr,
+					hasKey:   cxLookupKey(txHash),
+					hasErr:   errors.New("existence check failed"),
+				}
+				wantError, wantReadError = true, true
+			case "destination canonical read failure":
+				destination = failingReadDB{
+					Database: destination,
+					getKey:   canonicalHashKey(20),
+					getErr:   readErr,
+				}
+				wantError, wantReadError = true, true
+			case "destination canonical existence failure":
+				destination = failingReadDB{
+					Database: destination,
+					getKey:   canonicalHashKey(20),
+					getErr:   readErr,
+					hasKey:   canonicalHashKey(20),
+					hasErr:   errors.New("existence check failed"),
+				}
+				wantError, wantReadError = true, true
+			case "destination canonical missing":
+				if err := destination.Delete(canonicalHashKey(20)); err != nil {
+					t.Fatal(err)
+				}
 				wantError = true
-			case "existence failure":
-				destination = failingLookupDB{Database: destination, getErr: readErr, hasErr: errors.New("existence check failed")}
+			case "destination canonical malformed":
+				if err := destination.Put(canonicalHashKey(20), []byte{0x01}); err != nil {
+					t.Fatal(err)
+				}
+				wantError = true
+			case "destination canonical zero":
+				if err := destination.Put(canonicalHashKey(20), make([]byte, common.HashLength)); err != nil {
+					t.Fatal(err)
+				}
 				wantError = true
 			case "closed LevelDB":
 				if err := destination.Close(); err != nil {
@@ -115,7 +179,7 @@ func TestSumReceiptsDestinationLookup(t *testing.T) {
 				}
 				wantError = true
 			}
-			got, err := sumReceipts(0, source, map[uint32]ethdb.Database{1: destination}, 10, map[uint32]uint64{1: cutoff})
+			got, err := sumReceipts(0, source, map[uint32]ethdb.Database{1: destination}, 10, cutoffs)
 			if wantError {
 				if err == nil {
 					t.Fatalf("unreadable receipt returned totals: %+v", got)
@@ -126,7 +190,7 @@ func TestSumReceiptsDestinationLookup(t *testing.T) {
 				if !strings.Contains(err.Error(), txHash.Hex()) {
 					t.Fatalf("missing transaction context: %v", err)
 				}
-				if (name == "read failure" || name == "existence failure") && !errors.Is(err, readErr) {
+				if wantReadError && !errors.Is(err, readErr) {
 					t.Fatalf("lost original read error: %v", err)
 				}
 				return
@@ -148,8 +212,85 @@ func TestSumReceiptsDestinationLookup(t *testing.T) {
 func TestReadOptionalMemoryDatabaseMissingKey(t *testing.T) {
 	db := rawdb.NewMemoryDatabase()
 	defer db.Close()
-	value, err := readOptional(db, []byte("missing"))
-	if err != nil || value != nil {
-		t.Fatalf("missing key: value=%x error=%v", value, err)
+	value, found, err := readOptional(db, []byte("missing"))
+	if err != nil || found || value != nil {
+		t.Fatalf("missing key: value=%x found=%t error=%v", value, found, err)
+	}
+}
+
+func TestReadOptionalExistingEmptyValue(t *testing.T) {
+	db := rawdb.NewMemoryDatabase()
+	defer db.Close()
+	key := []byte("empty")
+	if err := db.Put(key, nil); err != nil {
+		t.Fatal(err)
+	}
+	value, found, err := readOptional(db, key)
+	if err != nil || !found || len(value) != 0 {
+		t.Fatalf("empty key: value=%x found=%t error=%v", value, found, err)
+	}
+}
+
+func TestSumReceiptsSourceCanonicalReadFailure(t *testing.T) {
+	readErr := errors.New("source canonical I/O failure")
+	for _, name := range []string{
+		"read failure",
+		"existence failure",
+		"missing",
+		"malformed",
+		"zero",
+	} {
+		t.Run(name, func(t *testing.T) {
+			source, destination, _ := receiptFixture(t)
+			switch name {
+			case "read failure":
+				source = failingReadDB{
+					Database: source,
+					getKey:   canonicalHashKey(10),
+					getErr:   readErr,
+				}
+			case "existence failure":
+				source = failingReadDB{
+					Database: source,
+					getKey:   canonicalHashKey(10),
+					getErr:   readErr,
+					hasKey:   canonicalHashKey(10),
+					hasErr:   errors.New("existence check failed"),
+				}
+			case "missing":
+				if err := source.Delete(canonicalHashKey(10)); err != nil {
+					t.Fatal(err)
+				}
+			case "malformed":
+				if err := source.Put(canonicalHashKey(10), []byte{0x01}); err != nil {
+					t.Fatal(err)
+				}
+			case "zero":
+				if err := source.Put(canonicalHashKey(10), make([]byte, common.HashLength)); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := sumReceipts(
+				0,
+				source,
+				map[uint32]ethdb.Database{1: destination},
+				10,
+				map[uint32]uint64{1: 20},
+			)
+			if err == nil {
+				t.Fatalf("unreadable source returned totals: %+v", got)
+			}
+			if !reflect.DeepEqual(got, directionTotals{}) {
+				t.Fatalf("partial totals returned on error: %+v", got)
+			}
+			if !strings.Contains(err.Error(), "source shard 0") ||
+				!strings.Contains(err.Error(), "block 10") {
+				t.Fatalf("missing source context: %v", err)
+			}
+			if (name == "read failure" || name == "existence failure") &&
+				!errors.Is(err, readErr) {
+				t.Fatalf("lost original read error: %v", err)
+			}
+		})
 	}
 }
