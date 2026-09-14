@@ -28,6 +28,10 @@ shard1_balance = load_module(
     "shard1_balance",
     "toolkit/scripts/forensics/historical-shard1-balance.py",
 )
+exploit_flow = load_module(
+    "exploit_flow",
+    "toolkit/scripts/forensics/historical-exploit-flow-export.py",
+)
 package_results = load_module(
     "package_results",
     "scripts/package-results.py",
@@ -109,6 +113,8 @@ class HistoricalReconciliationTest(unittest.TestCase):
                 writer = csv.DictWriter(
                     output,
                     fieldnames=(
+                        "audit_source_shard",
+                        "audit_source_block",
                         "signed_source_shard",
                         "signed_source_block",
                         "classification",
@@ -119,8 +125,8 @@ class HistoricalReconciliationTest(unittest.TestCase):
                 writer.writerows(
                     (
                         {
-                            "signed_source_shard": 1,
-                            "signed_source_block": 15,
+                            "audit_source_shard": 1,
+                            "audit_source_block": 15,
                             "classification": "valid_source_debit",
                             "amount_atto": 20,
                         },
@@ -143,6 +149,58 @@ class HistoricalReconciliationTest(unittest.TestCase):
             self.assertEqual(
                 shard1_balance.derive(1000, later_credits, later_debits),
                 970,
+            )
+
+    def test_source_audit_evidence_provenance_is_preserved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "source-audit.csv"
+            row = {
+                "from": "0x0000000000000000000000000000000000001111",
+                "classification": "source_debit_absent",
+                "classification_source": "independent_source_debit_evidence",
+                "replay_classification": "replay_incompatible",
+                "independent_evidence_reference": "evidence.json",
+                "independent_evidence_sha256": "ab" * 32,
+                "source_transaction_hash": "0x" + "11" * 32,
+                "audit_source_block": "10",
+                "amount_atto": "100",
+                "precompile_call_count": "1",
+                "failed_precompile_path_count": "0",
+                "source_transaction_status": "1",
+                "source_transaction_from":
+                    "0x0000000000000000000000000000000000001111",
+                "source_transaction_to":
+                    "0x0000000000000000000000000000000000002222",
+                "source_transaction_value_atto": "100",
+                "source_input_selector": "0x12345678",
+            }
+            with source.open("w", newline="") as output:
+                writer = csv.DictWriter(output, fieldnames=list(row))
+                writer.writeheader()
+                writer.writerow(row)
+            records = {}
+            exploit_flow.load_source_audit(records, source, 1)
+            record = next(iter(records.values()))
+            self.assertIn("source-debit-absent", record["incidents"])
+            self.assertIn(
+                "independent-source-debit-evidence",
+                record["trace_methods"],
+            )
+            self.assertEqual(
+                record["source_audit_classification_sources"],
+                {"independent_source_debit_evidence"},
+            )
+            self.assertEqual(
+                record["source_audit_replay_classifications"],
+                {"replay_incompatible"},
+            )
+            self.assertEqual(
+                record["source_audit_evidence_references"],
+                {"evidence.json"},
+            )
+            self.assertEqual(
+                record["source_audit_evidence_sha256"],
+                {"ab" * 32},
             )
 
     def test_max_rate_opening_labels_are_corrected(self):
