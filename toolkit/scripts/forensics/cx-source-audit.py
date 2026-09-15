@@ -313,7 +313,7 @@ def classify_replay(receipt_status, trace, inspection):
     trace_status = 0 if trace.get("error") else 1
     if receipt_status != 1:
         return (
-            "replay_incompatible",
+            "receipt_inconsistent",
             False,
             "canonical outgoing receipt has a failed source transaction status",
             trace_status,
@@ -485,6 +485,7 @@ def main():
         "rollback_leak": 0,
         "valid_source_debit": 0,
         "replay_incompatible": 0,
+        "receipt_inconsistent": 0,
         "unclassified": 0,
         "not_traced": 0,
     }
@@ -508,12 +509,19 @@ def main():
             raise RuntimeError(f"source transaction hash mismatch: {row['tx_hash']}")
         amount = identity["amount_atto"]
         source_to = decode_address(transaction.get("to"))
+        receipt = rpc(
+            args.rpc, "hmyv2_getTransactionReceipt", [transaction["hash"]]
+        )
+        if receipt is None:
+            raise RuntimeError(
+                f"source transaction receipt missing: {transaction['hash']}"
+            )
+        receipt_status = int(receipt["status"])
         direct_source_debit = (
             source_to == CX_PRECOMPILE
             or transaction["shardID"] != transaction["toShardID"]
         )
         if direct_source_debit:
-            receipt_status = ""
             trace = {}
             inspection = {
                 "precompile_call_count": int(source_to == CX_PRECOMPILE),
@@ -523,20 +531,21 @@ def main():
                 "failed_precompile_path_count": 0,
                 "failed_matching_precompile_path_count": 0,
             }
-            replay_classification = "not_traced"
-            replay_compatible = ""
-            replay_issue = ""
-            replay_status = ""
-            direct_classification = "valid_source_debit"
-        else:
-            receipt = rpc(
-                args.rpc, "hmyv2_getTransactionReceipt", [transaction["hash"]]
-            )
-            if receipt is None:
-                raise RuntimeError(
-                    f"source transaction receipt missing: {transaction['hash']}"
+            if receipt_status == 1:
+                replay_classification = "not_traced"
+                replay_compatible = ""
+                replay_issue = ""
+                direct_classification = "valid_source_debit"
+            else:
+                replay_classification = "receipt_inconsistent"
+                replay_compatible = False
+                replay_issue = (
+                    "canonical outgoing receipt has a failed direct source "
+                    "transaction status"
                 )
-            receipt_status = int(receipt["status"])
+                direct_classification = None
+            replay_status = ""
+        else:
             trace = rpc(
                 args.rpc,
                 "debug_traceTransaction",
@@ -552,7 +561,7 @@ def main():
                 receipt_status, trace, inspection
             )
             direct_classification = None
-        if evidence and not direct_source_debit and receipt_status != 1:
+        if evidence and receipt_status != 1:
             raise ValueError(
                 f"{row['tx_hash']}: independent evidence cannot override "
                 "a failed stored source transaction receipt"
@@ -643,6 +652,9 @@ def main():
                 ),
                 "replay_incompatible_atto": str(
                     replay_totals["replay_incompatible"]
+                ),
+                "receipt_inconsistent_atto": str(
+                    replay_totals["receipt_inconsistent"]
                 ),
                 "replay_unclassified_atto": str(
                     replay_totals["unclassified"]

@@ -32,9 +32,9 @@
           "path": "incident.json",
           "field": "total_atto"
         },
-        "rollback_leakage": {
-          "path": "rollback-summary.json",
-          "field": "rollback_leakage_atto"
+        "unbacked_cross_shard_credit": {
+          "path": "source-audit-summary.json",
+          "field": "unbacked_cross_shard_credit_atto"
         }
       }
     }

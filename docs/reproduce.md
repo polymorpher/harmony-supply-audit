@@ -104,6 +104,9 @@ bin/cross-shard-supply \
 Record the supported pending amount before comparing with another audit.
 
 Receipts to retired shards 2 and 3 are not silently included.
+The scan requires complete destination `cx` lookup indexes. A missing lookup
+paired with a block-level spent marker is evidence of an incomplete index, not
+an unspent receipt, and aborts the scan without publishing partial totals.
 
 ## 7. Assemble the factual ledger
 
@@ -245,6 +248,10 @@ debit. Traces with zero or multiple completed calls or a receipt-identity
 mismatch remain unclassified. A replay root inconsistent with the stored
 receipt is labeled `replay_incompatible`.
 
+Direct cross-shard transactions and direct calls to the precompile remain
+untraced, but their stored source transaction receipt must report success. A
+failed stored status is `receipt_inconsistent`, not a valid source debit.
+
 Current archive software is not necessarily a historical execution engine.
 Harmony commit `31752f21aa` changed the contract context used for precompiles
 reached through `DELEGATECALL`. A transaction executed before that code change
@@ -284,6 +291,20 @@ additional mechanism evidence required for `rollback_leak`.
 Receipt ledgers must identify both shards. If an older destination-side ledger
 omits either field, pass `--source-shard` or `--destination-shard` explicitly;
 the classifier does not silently assume shard zero.
+
+Summarize all non-overlapping source-audit outputs before using them in
+reconciliation:
+
+```sh
+python3 toolkit/scripts/forensics/summarize-cx-source-audit.py \
+  --output "$OUT/forensics/source-audit-summary.json" \
+  "$OUT/forensics/source-audit-shard0.csv" \
+  "$OUT/forensics/source-audit-shard1.csv"
+```
+
+The summary reports trace-proven rollback and independently proved debit
+absence separately. Use `unbacked_cross_shard_credit_atto`, their exact sum, as
+the historical-closure adjustment. Do not add a targeted subset a second time.
 
 The offline regression suite includes a successful constructor that creates a
 receipt and catches a rejected duplicate invocation. To reproduce its trace

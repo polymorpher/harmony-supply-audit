@@ -79,14 +79,17 @@ class CXSourceAuditTest(unittest.TestCase):
         def rpc(url, method, params):
             if method == "hmyv2_getTransactionByHash":
                 return transaction
-            if trace is None:
-                self.fail(f"direct source path unexpectedly requested {method}")
-            return {
-                "hmyv2_getTransactionReceipt": {
-                    "status": int(not trace.get("error")) if receipt_status is None else receipt_status
-                },
-                "debug_traceTransaction": trace,
-            }[method]
+            if method == "hmyv2_getTransactionReceipt":
+                if receipt_status is not None:
+                    status = receipt_status
+                elif trace is None:
+                    status = 1
+                else:
+                    status = int(not trace.get("error"))
+                return {"status": status}
+            if method == "debug_traceTransaction" and trace is not None:
+                return trace
+            self.fail(f"unexpected RPC method {method}")
 
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "receipts.csv"
@@ -174,10 +177,10 @@ class CXSourceAuditTest(unittest.TestCase):
         trace["error"] = "execution reverted"
         row, totals = self.run_audit(trace)
         self.assertEqual(row["classification"], "unclassified")
-        self.assertEqual(row["replay_classification"], "replay_incompatible")
+        self.assertEqual(row["replay_classification"], "receipt_inconsistent")
         self.assertEqual(row["failed_precompile_path_count"], "0")
         self.assertEqual(totals["unclassified_atto"], "100")
-        self.assertEqual(totals["replay_incompatible_atto"], "100")
+        self.assertEqual(totals["receipt_inconsistent_atto"], "100")
 
     def test_rejected_call_alone_does_not_prove_a_debit(self):
         trace = constructor_trace()
@@ -249,9 +252,41 @@ class CXSourceAuditTest(unittest.TestCase):
                 row, totals = self.run_audit(trace, receipt_status=status)
                 self.assertEqual(row["classification"], "unclassified")
                 self.assertEqual(
-                    row["replay_classification"], "replay_incompatible"
+                    row["replay_classification"],
+                    "replay_incompatible" if status == 1 else "receipt_inconsistent",
                 )
                 self.assertEqual(totals["unclassified_atto"], "100")
+
+    def test_post_change_archive_replay_shape_is_incompatible(self):
+        trace = {
+            "type": "CALL",
+            "from": ORIGIN,
+            "to": CONSTRUCTOR,
+            "error": "out of gas",
+            "calls": [{
+                "type": "DELEGATECALL",
+                "from": CONSTRUCTOR,
+                "to": "0x0000000000000000000000000000000000003333",
+                "error": "out of gas",
+                "calls": [{
+                    "type": "DELEGATECALL",
+                    "from": CONSTRUCTOR,
+                    "to": audit.CX_PRECOMPILE,
+                    "input": INPUT,
+                    "error": "internal failure",
+                }],
+            }],
+        }
+        row, totals = self.run_audit(
+            trace,
+            receipt_status=1,
+            receipt_updates={"from": ORIGIN},
+        )
+        self.assertEqual(row["replay_classification"], "replay_incompatible")
+        self.assertEqual(row["classification"], "unclassified")
+        self.assertEqual(row["precompile_payload_match_count"], "1")
+        self.assertEqual(row["completed_precompile_call_count"], "0")
+        self.assertEqual(totals["replay_incompatible_atto"], "100")
 
     def test_completed_call_payload_must_match_receipt(self):
         mismatches = (
@@ -374,6 +409,15 @@ class CXSourceAuditTest(unittest.TestCase):
             self.run_audit(
                 trace, receipt_status=0, evidence_status="absent"
             )
+        with self.assertRaisesRegex(
+            ValueError, "cannot override a failed stored source transaction"
+        ):
+            self.run_audit(
+                None,
+                {"toShardID": 1},
+                receipt_status=0,
+                evidence_status="absent",
+            )
 
     def test_invalid_independent_evidence_digest_aborts(self):
         with self.assertRaisesRegex(ValueError, "not a SHA-256 digest"):
@@ -424,4 +468,16 @@ class CXSourceAuditTest(unittest.TestCase):
                 self.assertEqual(row["classification"], "valid_source_debit")
                 self.assertEqual(row["replay_classification"], "not_traced")
                 self.assertEqual(row["classification_source"], "direct_transaction")
+                self.assertEqual(row["source_transaction_status"], "1")
                 self.assertEqual(row["completed_precompile_call_count"], "")
+
+    def test_failed_direct_source_receipt_is_inconsistent(self):
+        row, totals = self.run_audit(
+            None,
+            {"toShardID": 1},
+            receipt_status=0,
+        )
+        self.assertEqual(row["classification"], "unclassified")
+        self.assertEqual(row["replay_classification"], "receipt_inconsistent")
+        self.assertEqual(row["source_transaction_status"], "0")
+        self.assertEqual(totals["receipt_inconsistent_atto"], "100")

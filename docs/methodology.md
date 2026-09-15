@@ -126,7 +126,9 @@ the audit when the protocol accepted it.
 
 The trace's root success/failure must agree with the stored transaction receipt;
 a mismatch is recorded as `replay_incompatible`. Matching statuses alone do not
-prove equivalence of the internal execution.
+prove equivalence of the internal execution. A failed stored source receipt
+paired with a purported canonical outgoing receipt is instead
+`receipt_inconsistent` and cannot be overridden by independent evidence.
 
 Historical re-execution must also reproduce the implementation used at the
 source height. An archive replay that rejects the precompile despite an existing
@@ -156,6 +158,12 @@ yields `valid_source_debit`. Without independent evidence, an incompatible
 replay remains finally `unclassified`; it is never interpreted as a zero-value
 adjustment.
 
+`summarize-cx-source-audit.py` keeps mechanism-proven `rollback_leak` separate
+from canonical-state-proven `source_debit_absent`. Their sum is reported as
+`unbacked_cross_shard_credit_atto`, which is the named adjustment used for
+historical supply closure. This preserves the arithmetic without describing
+debit-absence-only rows as trace-reproduced rollback.
+
 The preferred shard-1 historical measurement is a direct account-trie scan at
 the matching historical root. When that root is unavailable, the audit derives
 the historical balance from the measured cutoff balance:
@@ -171,7 +179,7 @@ The residual at each checkpoint is:
 `S0 claims + S1 claims - genesis - pre-staking rewards - blk-rwd`
 
 minus named direct-state adjustments such as HIP-30 recovery, the reconstructed
-December incident, and cumulative rollback leakage.
+December incident, and cumulative unbacked cross-shard credits.
 
 `historical-closure.py` performs this calculation at every checkpoint and
 checks the change between checkpoints. The residual chain is an independent

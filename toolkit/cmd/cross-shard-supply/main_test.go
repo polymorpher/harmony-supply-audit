@@ -83,6 +83,10 @@ func TestSumReceiptsDestinationLookup(t *testing.T) {
 	for _, name := range []string{
 		"spent",
 		"missing",
+		"missing with spent marker",
+		"missing with malformed spent marker",
+		"spent marker read failure",
+		"spent marker existence failure",
 		"empty",
 		"after cutoff",
 		"missing cutoff",
@@ -108,6 +112,47 @@ func TestSumReceiptsDestinationLookup(t *testing.T) {
 					t.Fatal(err)
 				}
 				wantPending = true
+			case "missing with spent marker":
+				if err := destination.Delete(cxLookupKey(txHash)); err != nil {
+					t.Fatal(err)
+				}
+				if err := destination.Put(spentKey(0, 10), []byte{0}); err != nil {
+					t.Fatal(err)
+				}
+				wantError = true
+			case "missing with malformed spent marker":
+				if err := destination.Delete(cxLookupKey(txHash)); err != nil {
+					t.Fatal(err)
+				}
+				if err := destination.Put(spentKey(0, 10), []byte{1}); err != nil {
+					t.Fatal(err)
+				}
+				wantError = true
+			case "spent marker read failure":
+				if err := destination.Delete(cxLookupKey(txHash)); err != nil {
+					t.Fatal(err)
+				}
+				if err := destination.Put(spentKey(0, 10), []byte{0}); err != nil {
+					t.Fatal(err)
+				}
+				destination = failingReadDB{
+					Database: destination,
+					getKey:   spentKey(0, 10),
+					getErr:   readErr,
+				}
+				wantError, wantReadError = true, true
+			case "spent marker existence failure":
+				if err := destination.Delete(cxLookupKey(txHash)); err != nil {
+					t.Fatal(err)
+				}
+				destination = failingReadDB{
+					Database: destination,
+					getKey:   spentKey(0, 10),
+					getErr:   readErr,
+					hasKey:   spentKey(0, 10),
+					hasErr:   errors.New("existence check failed"),
+				}
+				wantError, wantReadError = true, true
 			case "empty":
 				if err := destination.Put(cxLookupKey(txHash), nil); err != nil {
 					t.Fatal(err)

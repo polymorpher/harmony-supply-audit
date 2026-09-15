@@ -21,6 +21,7 @@ import (
 var (
 	receiptPrefix  = []byte("cxReceipt")
 	cxLookupPrefix = []byte("cx")
+	spentPrefix    = []byte("cxReceiptSpent")
 )
 
 type txLookupEntry struct {
@@ -121,6 +122,15 @@ func cxLookupKey(hash common.Hash) []byte {
 	key := make([]byte, len(cxLookupPrefix)+common.HashLength)
 	copy(key, cxLookupPrefix)
 	copy(key[len(cxLookupPrefix):], hash.Bytes())
+	return key
+}
+
+func spentKey(source uint32, number uint64) []byte {
+	key := make([]byte, len(spentPrefix)+4+8)
+	copy(key, spentPrefix)
+	offset := len(spentPrefix)
+	binary.BigEndian.PutUint32(key[offset:offset+4], source)
+	binary.BigEndian.PutUint64(key[offset+4:], number)
 	return key
 }
 
@@ -306,6 +316,39 @@ func sumReceipts(
 				return directionTotals{}, fmt.Errorf("read destination shard %d CX lookup %s: %w", destination, receipt.TxHash.Hex(), err)
 			}
 			if !found {
+				marker, markerFound, markerErr := readOptional(
+					destinationDB,
+					spentKey(sourceShard, blockNumber),
+				)
+				if markerErr != nil {
+					return directionTotals{}, fmt.Errorf(
+						"read destination shard %d spent marker for source shard %d block %d after missing CX lookup %s: %w",
+						destination,
+						sourceShard,
+						blockNumber,
+						receipt.TxHash.Hex(),
+						markerErr,
+					)
+				}
+				if markerFound {
+					if len(marker) != 1 || marker[0] != 0 {
+						return directionTotals{}, fmt.Errorf(
+							"invalid destination shard %d spent marker %x for source shard %d block %d after missing CX lookup %s",
+							destination,
+							marker,
+							sourceShard,
+							blockNumber,
+							receipt.TxHash.Hex(),
+						)
+					}
+					return directionTotals{}, fmt.Errorf(
+						"destination shard %d CX lookup %s is missing despite a spent marker for source shard %d block %d; destination lookup index is incomplete",
+						destination,
+						receipt.TxHash.Hex(),
+						sourceShard,
+						blockNumber,
+					)
+				}
 				spent = false
 				break
 			}

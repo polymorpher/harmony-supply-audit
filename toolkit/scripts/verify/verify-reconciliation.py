@@ -38,6 +38,35 @@ def load_path(path):
         return json.load(source)
 
 
+def cross_shard_components(by_name):
+    legacy_name = "proven_cross_shard_rollback_leakage"
+    trace_name = "trace_proven_cross_shard_rollback_leakage"
+    absent_name = "canonical_state_proven_source_debit_absence"
+    legacy = by_name.get(legacy_name)
+    split_present = trace_name in by_name or absent_name in by_name
+    if legacy is not None and split_present:
+        raise ValueError("cross-shard reconciliation mixes legacy and split components")
+    if legacy is not None:
+        return {
+            "trace_proven": legacy,
+            "source_debit_absent": 0,
+            "total_unbacked_credit": legacy,
+        }
+    if not split_present:
+        raise ValueError("cross-shard reconciliation component is missing")
+    if trace_name not in by_name or absent_name not in by_name:
+        raise ValueError(
+            "split cross-shard reconciliation requires both evidence components"
+        )
+    trace = by_name[trace_name]
+    absent = by_name[absent_name]
+    return {
+        "trace_proven": trace,
+        "source_debit_absent": absent,
+        "total_unbacked_credit": trace + absent,
+    }
+
+
 def load_historical_closure_module():
     path = Path(__file__).with_name("historical-closure.py")
     spec = importlib.util.spec_from_file_location("historical_closure", path)
@@ -66,7 +95,7 @@ def main():
         raise ValueError("claim-adjusted gap does not equal state gap plus pending receipts")
 
     by_name = {component["name"]: int(component["atto"]) for component in components}
-    cross_shard = by_name["proven_cross_shard_rollback_leakage"]
+    cross_shard = cross_shard_components(by_name)["total_unbacked_credit"]
     december = by_name["december_2023_repeated_undelegation_mint"]
     max_rate_net = by_name["post_2023_max_rate_net_effect_at_cleanup"]
     rounding = by_name["post_top_max_rate_rounding_drift"]
