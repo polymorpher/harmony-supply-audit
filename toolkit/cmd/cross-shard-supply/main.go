@@ -124,13 +124,31 @@ func cxLookupKey(hash common.Hash) []byte {
 	return key
 }
 
+// readOptional distinguishes a missing key from an unreadable database without
+// relying on backend-specific not-found errors (ethdb has no shared sentinel).
+// Only failed Get calls need the additional existence check.
+func readOptional(db ethdb.KeyValueReader, key []byte) ([]byte, error) {
+	encoded, err := db.Get(key)
+	if err == nil {
+		return encoded, nil
+	}
+	exists, hasErr := db.Has(key)
+	if hasErr != nil {
+		return nil, fmt.Errorf("%w (existence check also failed: %v)", err, hasErr)
+	}
+	if exists {
+		return nil, err
+	}
+	return nil, nil
+}
+
 func sumReceipts(
 	sourceShard uint32,
 	source ethdb.Database,
 	destinations map[uint32]ethdb.Database,
 	sourceCutoff uint64,
 	destinationCutoffs map[uint32]uint64,
-) directionTotals {
+) (directionTotals, error) {
 	result := &mutableDirectionTotals{
 		directionTotals:   directionTotals{SourceShard: sourceShard},
 		spentAmount:       new(big.Int),
@@ -182,7 +200,7 @@ func sumReceipts(
 
 		var receipts []*cxReceipt
 		if err := rlp.DecodeBytes(iterator.Value(), &receipts); err != nil {
-			fatalf(
+			return directionTotals{}, fmt.Errorf(
 				"decode source shard %d block %d receipt group: %v",
 				sourceShard,
 				blockNumber,
@@ -192,7 +210,7 @@ func sumReceipts(
 		groupAmount := new(big.Int)
 		for i, receipt := range receipts {
 			if receipt == nil || receipt.To == nil || receipt.Amount == nil {
-				fatalf(
+				return directionTotals{}, fmt.Errorf(
 					"invalid source shard %d block %d receipt %d",
 					sourceShard,
 					blockNumber,
@@ -200,14 +218,14 @@ func sumReceipts(
 				)
 			}
 			if receipt.ShardID != sourceShard || receipt.ToShardID != destination {
-				fatalf(
+				return directionTotals{}, fmt.Errorf(
 					"receipt identity mismatch at source shard %d block %d",
 					sourceShard,
 					blockNumber,
 				)
 			}
 			if receipt.Amount.Sign() < 0 {
-				fatalf(
+				return directionTotals{}, fmt.Errorf(
 					"negative receipt amount at source shard %d block %d",
 					sourceShard,
 					blockNumber,
@@ -231,14 +249,17 @@ func sumReceipts(
 		spent := true
 		var destinationBlock uint64
 		for _, receipt := range receipts {
-			encoded, err := destinationDB.Get(cxLookupKey(receipt.TxHash))
-			if err != nil || len(encoded) == 0 {
+			encoded, err := readOptional(destinationDB, cxLookupKey(receipt.TxHash))
+			if err != nil {
+				return directionTotals{}, fmt.Errorf("read destination shard %d CX lookup %s: %w", destination, receipt.TxHash.Hex(), err)
+			}
+			if len(encoded) == 0 {
 				spent = false
 				break
 			}
 			var entry txLookupEntry
 			if err := rlp.DecodeBytes(encoded, &entry); err != nil {
-				fatalf("decode CX lookup %s: %v", receipt.TxHash.Hex(), err)
+				return directionTotals{}, fmt.Errorf("decode CX lookup %s: %w", receipt.TxHash.Hex(), err)
 			}
 			cutoff, ok := destinationCutoffs[destination]
 			if !ok || entry.BlockIndex > cutoff {
@@ -250,7 +271,7 @@ func sumReceipts(
 				break
 			}
 			if destinationBlock != 0 && destinationBlock != entry.BlockIndex {
-				fatalf("receipt group source shard %d block %d was split across destination blocks", sourceShard, blockNumber)
+				return directionTotals{}, fmt.Errorf("receipt group source shard %d block %d was split across destination blocks", sourceShard, blockNumber)
 			}
 			destinationBlock = entry.BlockIndex
 		}
@@ -269,12 +290,12 @@ func sumReceipts(
 		}
 	}
 	if err := iterator.Error(); err != nil {
-		fatalf("iterate source shard %d receipts: %v", sourceShard, err)
+		return directionTotals{}, fmt.Errorf("iterate source shard %d receipts: %w", sourceShard, err)
 	}
 	result.SpentAmountAtto = result.spentAmount.String()
 	result.PendingAmountAtto = result.pendingAmount.String()
 	result.UnsupportedAmountAtto = result.unsupportedAmount.String()
-	return result.directionTotals
+	return result.directionTotals, nil
 }
 
 func makeReceiptGroup(
@@ -328,20 +349,26 @@ func main() {
 	defer shard1.Close()
 
 	cutoffs := map[uint32]uint64{0: *shard0Cutoff, 1: *shard1Cutoff}
-	direction0 := sumReceipts(
+	direction0, err := sumReceipts(
 		0,
 		shard0,
 		map[uint32]ethdb.Database{1: shard1},
 		*shard0Cutoff,
 		cutoffs,
 	)
-	direction1 := sumReceipts(
+	if err != nil {
+		fatalf("%v", err)
+	}
+	direction1, err := sumReceipts(
 		1,
 		shard1,
 		map[uint32]ethdb.Database{0: shard0},
 		*shard1Cutoff,
 		cutoffs,
 	)
+	if err != nil {
+		fatalf("%v", err)
+	}
 	pending := new(big.Int)
 	unsupported := new(big.Int)
 	for _, direction := range []directionTotals{direction0, direction1} {

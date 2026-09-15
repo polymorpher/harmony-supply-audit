@@ -1,0 +1,102 @@
+package vm_test
+
+import (
+	"encoding/hex"
+	"encoding/json"
+	"math/big"
+	"testing"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/harmony-one/harmony/core/state"
+	"github.com/harmony-one/harmony/core/types"
+	"github.com/harmony-one/harmony/core/vm"
+	"github.com/harmony-one/harmony/hmy/tracers"
+	_ "github.com/harmony-one/harmony/hmy/tracers/js"
+	"github.com/harmony-one/harmony/internal/params"
+)
+
+func TestSupplyAuditRepeatedCXCall(t *testing.T) {
+	disk := rawdb.NewMemoryDatabase()
+	defer disk.Close()
+	db, err := state.New(common.Hash{}, state.NewDatabase(disk), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	origin := common.HexToAddress("0x1111")
+	recipient := common.HexToAddress("0x2222")
+	db.AddBalance(origin, big.NewInt(100))
+	input := make([]byte, 100)
+	copy(input, []byte{0x28, 0x48, 0x08, 0x00})
+	input[35] = 100
+	copy(input[48:68], recipient.Bytes())
+	input[99] = 1
+	var code []byte
+	for offset := 0; offset < len(input); offset += 32 {
+		word := make([]byte, 32)
+		copy(word, input[offset:])
+		code = append(code, byte(vm.PUSH32))
+		code = append(code, word...)
+		code = append(code, byte(vm.PUSH1), byte(offset), byte(vm.MSTORE))
+	}
+	// During construction the caller has no installed runtime code. The first
+	// CALL creates the receipt; a zero-value duplicate is rejected and caught.
+	for _, value := range []byte{100, 0} {
+		code = append(code, 0x60, 0, 0x60, 0, 0x60, 100, 0x60, 0,
+			0x60, value, 0x60, 0xf9, 0x61, 0x27, 0x10, byte(vm.CALL), byte(vm.POP))
+	}
+	code = append(code, byte(vm.STOP))
+	tracer, err := tracers.New("callTracer", nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := *params.MainnetChainConfig
+	env := vm.NewEVM(vm.BlockContext{
+		BlockNumber: big.NewInt(1), EpochNumber: big.NewInt(2000), Time: big.NewInt(1),
+		ShardID: 0, NumShards: 2, TxType: types.SameShardTx,
+		CanTransfer: func(db vm.StateDB, from common.Address, value *big.Int) bool {
+			return db.GetBalance(from).Cmp(value) >= 0
+		},
+		Transfer: func(db vm.StateDB, from, to common.Address, value *big.Int, kind types.TransactionType) {
+			if kind == types.SameShardTx || kind == types.SubtractionOnly {
+				db.SubBalance(from, value)
+			}
+			if kind == types.SameShardTx {
+				db.AddBalance(to, value)
+			}
+		},
+		IsValidator: func(vm.StateDB, common.Address) bool { return false },
+	}, vm.TxContext{Origin: origin, GasPrice: big.NewInt(0)}, db, &cfg, vm.Config{Debug: true, Tracer: tracer})
+	_, created, _, err := env.Create(vm.AccountRef(origin), code, 1000000, big.NewInt(100))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if env.CXReceipt == nil || env.CXReceipt.Amount.Cmp(big.NewInt(100)) != 0 || env.CXReceipt.From != created || *env.CXReceipt.To != recipient {
+		t.Fatalf("unexpected receipt: %+v", env.CXReceipt)
+	}
+	for _, address := range []common.Address{origin, created, common.HexToAddress("0xf9")} {
+		if db.GetBalance(address).Sign() != 0 {
+			t.Fatalf("balance retained at %s: %s", address, db.GetBalance(address))
+		}
+	}
+	result, err := tracer.GetResult()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var trace struct {
+		Error string
+		Calls []struct {
+			Error string
+			To    string
+		}
+	}
+	if err := json.Unmarshal(result, &trace); err != nil {
+		t.Fatal(err)
+	}
+	if trace.Error != "" || len(trace.Calls) != 2 || trace.Calls[0].Error != "" || trace.Calls[1].Error == "" {
+		t.Fatalf("unexpected trace: %s", result)
+	}
+	t.Logf("INIT_CODE=%s", hex.EncodeToString(code))
+	t.Logf("TRACE=%s", result)
+	t.Log("Real EVM result: success, source balance debited 100, one receipt 100, second precompile invocation rejected")
+}

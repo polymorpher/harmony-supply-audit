@@ -236,6 +236,28 @@ python3 toolkit/scripts/forensics/cx-source-audit.py \
 rollback leakage only when its source debit occurred inside a failed or
 reverted execution frame.
 
+A failed precompile invocation alone is not such evidence. For traced source
+transactions, exactly one precompile call must complete locally; a failed
+ancestor then distinguishes rollback leakage from a valid debit. Traces with
+zero or multiple completed calls, or an outcome inconsistent with the stored
+transaction receipt, remain unclassified.
+
+The offline regression suite includes a successful constructor that creates a
+receipt and catches a rejected duplicate invocation. To reproduce its trace
+with a real Harmony EVM, use an existing buildable Harmony checkout:
+
+```sh
+python3 scripts/test-cx-constructor-evm.py --harmony-source /path/to/harmony
+```
+
+This optional test uses a Go build overlay, an in-memory state database, and
+mainnet epoch 2000 rules (before receipt rollback and strict-validation changes).
+It does not modify the Harmony checkout or contact a node. The test asserts a
+successful constructor, a source debit of 100 synthetic units, one matching
+receipt, and a rejected second call. The Go dependencies/native build prerequisites
+are those of the supplied Harmony checkout. It is not a mainnet transaction replay
+or evidence that published audit totals were affected.
+
 ### Derive historical shard-1 balances when direct tries are unavailable
 
 A direct `account-snapshot` at each historical shard-1 root is preferred. If an
