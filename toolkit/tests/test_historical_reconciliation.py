@@ -24,9 +24,21 @@ historical_closure = load_module(
     "historical_closure",
     "toolkit/scripts/verify/historical-closure.py",
 )
+verify_reconciliation = load_module(
+    "verify_reconciliation",
+    "toolkit/scripts/verify/verify-reconciliation.py",
+)
 shard1_balance = load_module(
     "shard1_balance",
     "toolkit/scripts/forensics/historical-shard1-balance.py",
+)
+exploit_flow = load_module(
+    "exploit_flow",
+    "toolkit/scripts/forensics/historical-exploit-flow-export.py",
+)
+source_audit_summary = load_module(
+    "source_audit_summary",
+    "toolkit/scripts/forensics/summarize-cx-source-audit.py",
 )
 package_results = load_module(
     "package_results",
@@ -109,6 +121,8 @@ class HistoricalReconciliationTest(unittest.TestCase):
                 writer = csv.DictWriter(
                     output,
                     fieldnames=(
+                        "audit_source_shard",
+                        "audit_source_block",
                         "signed_source_shard",
                         "signed_source_block",
                         "classification",
@@ -119,8 +133,8 @@ class HistoricalReconciliationTest(unittest.TestCase):
                 writer.writerows(
                     (
                         {
-                            "signed_source_shard": 1,
-                            "signed_source_block": 15,
+                            "audit_source_shard": 1,
+                            "audit_source_block": 15,
                             "classification": "valid_source_debit",
                             "amount_atto": 20,
                         },
@@ -144,6 +158,161 @@ class HistoricalReconciliationTest(unittest.TestCase):
                 shard1_balance.derive(1000, later_credits, later_debits),
                 970,
             )
+
+    def test_source_audit_evidence_provenance_is_preserved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "source-audit.csv"
+            row = {
+                "from": "0x0000000000000000000000000000000000001111",
+                "classification": "source_debit_absent",
+                "classification_source": "independent_source_debit_evidence",
+                "replay_classification": "replay_incompatible",
+                "independent_evidence_reference": "evidence.json",
+                "independent_evidence_sha256": "ab" * 32,
+                "source_transaction_hash": "0x" + "11" * 32,
+                "audit_source_block": "10",
+                "amount_atto": "100",
+                "precompile_call_count": "1",
+                "failed_precompile_path_count": "0",
+                "source_transaction_status": "1",
+                "source_transaction_from":
+                    "0x0000000000000000000000000000000000001111",
+                "source_transaction_to":
+                    "0x0000000000000000000000000000000000002222",
+                "source_transaction_value_atto": "100",
+                "source_input_selector": "0x12345678",
+            }
+            with source.open("w", newline="") as output:
+                writer = csv.DictWriter(output, fieldnames=list(row))
+                writer.writeheader()
+                writer.writerow(row)
+            records = {}
+            exploit_flow.load_source_audit(records, source, 1)
+            record = next(iter(records.values()))
+            self.assertIn("source-debit-absent", record["incidents"])
+            self.assertIn(
+                "independent-source-debit-evidence",
+                record["trace_methods"],
+            )
+            self.assertEqual(
+                record["source_audit_classification_sources"],
+                {"independent_source_debit_evidence"},
+            )
+            self.assertEqual(
+                record["source_audit_replay_classifications"],
+                {"replay_incompatible"},
+            )
+            self.assertEqual(
+                record["source_audit_evidence_references"],
+                {"evidence.json"},
+            )
+            self.assertEqual(
+                record["source_audit_evidence_sha256"],
+                {"ab" * 32},
+            )
+
+    def test_source_audit_summary_separates_mechanism_and_debit_absence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "source-audit.csv"
+            rows = []
+            for index, (classification, replay, amount) in enumerate((
+                ("rollback_leak", "rollback_leak", 10),
+                ("source_debit_absent", "replay_incompatible", 20),
+                ("valid_source_debit", "valid_source_debit", 30),
+                ("unclassified", "unclassified", 40),
+            )):
+                rows.append({
+                    "audit_source_shard": index % 2,
+                    "audit_destination_shard": 1 - (index % 2),
+                    "audit_source_block": 100 + index,
+                    "audit_source_block_hash": f"0x{index + 1:064x}",
+                    "receipt_index": 0,
+                    "tx_hash": f"0x{index + 10:064x}",
+                    "amount_atto": amount,
+                    "replay_classification": replay,
+                    "classification": classification,
+                })
+            with source.open("w", newline="") as output:
+                writer = csv.DictWriter(output, fieldnames=list(rows[0]))
+                writer.writeheader()
+                writer.writerows(rows)
+            summary = source_audit_summary.classify([source])
+            self.assertEqual(
+                summary["trace_proven_rollback_leakage_atto"], "10"
+            )
+            self.assertEqual(
+                summary[
+                    "canonical_state_proven_source_debit_absence_atto"
+                ],
+                "20",
+            )
+            self.assertEqual(
+                summary["unbacked_cross_shard_credit_atto"], "30"
+            )
+            self.assertEqual(summary["unclassified_atto"], "40")
+            self.assertEqual(
+                summary["by_final_classification"]["valid_source_debit"]["count"],
+                1,
+            )
+
+    def test_reconciliation_accepts_split_cross_shard_evidence(self):
+        split = verify_reconciliation.cross_shard_components({
+            "trace_proven_cross_shard_rollback_leakage": 10,
+            "canonical_state_proven_source_debit_absence": 20,
+        })
+        self.assertEqual(split["trace_proven"], 10)
+        self.assertEqual(split["source_debit_absent"], 20)
+        self.assertEqual(split["total_unbacked_credit"], 30)
+        legacy = verify_reconciliation.cross_shard_components({
+            "proven_cross_shard_rollback_leakage": 30,
+        })
+        self.assertEqual(legacy["total_unbacked_credit"], 30)
+        with self.assertRaisesRegex(ValueError, "mixes legacy and split"):
+            verify_reconciliation.cross_shard_components({
+                "proven_cross_shard_rollback_leakage": 30,
+                "canonical_state_proven_source_debit_absence": 20,
+            })
+        with self.assertRaisesRegex(ValueError, "requires both"):
+            verify_reconciliation.cross_shard_components({
+                "trace_proven_cross_shard_rollback_leakage": 10,
+            })
+
+    def test_packaging_preserves_split_cross_shard_components(self):
+        names = package_results.cross_shard_component_names({
+            "components": [
+                {
+                    "name": "trace_proven_cross_shard_rollback_leakage",
+                    "atto": "10",
+                },
+                {
+                    "name": "canonical_state_proven_source_debit_absence",
+                    "atto": "20",
+                },
+            ]
+        })
+        self.assertEqual(
+            names,
+            [
+                "trace_proven_cross_shard_rollback_leakage",
+                "canonical_state_proven_source_debit_absence",
+            ],
+        )
+        with self.assertRaisesRegex(ValueError, "mixes legacy and split"):
+            package_results.cross_shard_component_names({
+                "components": [
+                    {"name": "proven_cross_shard_rollback_leakage"},
+                    {
+                        "name":
+                            "canonical_state_proven_source_debit_absence",
+                    },
+                ]
+            })
+        with self.assertRaisesRegex(ValueError, "requires both"):
+            package_results.cross_shard_component_names({
+                "components": [{
+                    "name": "canonical_state_proven_source_debit_absence",
+                }]
+            })
 
     def test_max_rate_opening_labels_are_corrected(self):
         value = {

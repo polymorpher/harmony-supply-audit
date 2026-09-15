@@ -59,6 +59,29 @@ def rename_key(value, old, new):
         value[new] = value.pop(old)
 
 
+def cross_shard_component_names(reconciliation):
+    names = {
+        component["name"] for component in reconciliation.get("components", [])
+    }
+    legacy = "proven_cross_shard_rollback_leakage"
+    split = (
+        "trace_proven_cross_shard_rollback_leakage",
+        "canonical_state_proven_source_debit_absence",
+    )
+    if legacy in names and any(name in names for name in split):
+        raise ValueError("reconciliation mixes legacy and split cross-shard components")
+    if legacy in names:
+        return [legacy]
+    present = [name for name in split if name in names]
+    if present and len(present) != len(split):
+        raise ValueError(
+            "split cross-shard reconciliation requires both evidence components"
+        )
+    if present:
+        return list(split)
+    raise ValueError("reconciliation has no cross-shard evidence component")
+
+
 def correct_max_rate_labels(value, target_name):
     if target_name == "max-rate-opening-payout-audit.json":
         renames = {
@@ -99,6 +122,7 @@ def correct_max_rate_labels(value, target_name):
         )
 
     if target_name == "reconciliation.json":
+        cross_shard_components = cross_shard_component_names(value)
         rename_key(
             value,
             "known_unauthorized_gross_creation",
@@ -115,8 +139,11 @@ def correct_max_rate_labels(value, target_name):
         peak["includes"] = [
             "december_2023_repeated_undelegation_mint",
             "post_2023_max_rate_activation_inclusive_peak_duplicated_claim_exposure",
-            "proven_cross_shard_rollback_leakage",
-        ]
+        ] + cross_shard_components
+        value["known_unauthorized_net_cutoff_component"]["includes"] = [
+            "december_2023_repeated_undelegation_mint",
+            "post_2023_max_rate_net_effect_at_cleanup",
+        ] + cross_shard_components
 
         max_rate = value["post_2023_max_rate"]
         renames = {
@@ -311,9 +338,42 @@ def main():
             "RPC-derived",
         ),
     ]
+    source_audit_mappings = [
+        (
+            supply / "source-audit-summary.json",
+            "source-audit-summary.json",
+            "RPC and canonical-state evidence",
+        ),
+        (
+            supply / "source-audit-verification.json",
+            "source-audit-verification.json",
+            "verification-derived",
+        ),
+    ]
+    reconciliation = json.loads((supply / "reconciliation.json").read_text())
+    split_cross_shard = cross_shard_component_names(reconciliation) != [
+        "proven_cross_shard_rollback_leakage"
+    ]
+    evidence_exists = [source.is_file() for source, _, _ in source_audit_mappings]
+    if split_cross_shard or any(evidence_exists):
+        if not all(evidence_exists):
+            missing = [
+                str(source)
+                for (source, _, _), exists in zip(
+                    source_audit_mappings, evidence_exists
+                )
+                if not exists
+            ]
+            raise FileNotFoundError(
+                "source-audit evidence package is incomplete: "
+                + ", ".join(missing)
+            )
+        mappings[1:1] = source_audit_mappings
 
     provenance_notes = {
         "reconciliation.json": "Synthesis of database, RPC, and curated incident evidence; cutoff formula and historical closure are independently recomputed by verify-reconciliation.py.",
+        "source-audit-summary.json": "Exact non-overlapping receipt totals with mechanism proof separated from independent source-debit-absence evidence.",
+        "source-audit-verification.json": "Identity-set, evidence-digest, classification-transition, and aggregate-preservation checks for the archival rerun.",
         "burn-address-audit.json": "Transaction and cutoff-state evidence with curated burn-address classification.",
         "max-rate-opening-payout-audit.json": "Opening-boundary evidence assembled from recorded historical RPC checks; the broader peak claim-exposure decomposition remains curated.",
         "extra-mint-blacklist-burn-path-audit.json": "Assembled from a recorded top-level transaction-history check; no standalone generator was preserved.",

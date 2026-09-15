@@ -93,10 +93,65 @@ source debit occurred inside execution that reverted.
 `precompile_call_count` includes rejected call-family invocations, but not
 `SELFDESTRUCT` transfers to the precompile address.
 `completed_precompile_call_count` counts invocations without a local error.
+`precompile_payload_match_count` counts invocations whose effective sender
+context, ABI amount, recipient, and destination shard match the canonical
+receipt.
+`completed_precompile_payload_match_count` applies both requirements.
 `failed_precompile_path_count` counts those completed invocations whose ancestor
-frame failed, not invocations that were rejected before creating a receipt.
-For direct source debits, the existing untraced classification path is unchanged;
-the completed count is blank because no trace was inspected.
+frame below the successful root failed, not invocations that were rejected
+before creating a receipt.
+`failed_matching_precompile_path_count` restricts that count to calls matching
+the canonical receipt payload.
+`replay_status` is derived from the replay root.
+`replay_compatible` records whether the replay root and stored successful
+receipt are compatible.
+`replay_issue` explains an incompatible or inconclusive replay.
+`replay_classification` is one of `rollback_leak`, `valid_source_debit`,
+`replay_incompatible`, `receipt_inconsistent`, `unclassified`, or `not_traced`.
+`receipt_inconsistent` means a purported canonical outgoing receipt is paired
+with a failed stored source transaction receipt; independent evidence cannot
+override it.
+`independent_source_debit_status` is `absent` or `persisted` when external
+canonical source-state evidence was supplied.
+`independent_evidence_*` records that evidence's classification, type,
+reference, and SHA-256.
+`classification_source` identifies direct transaction semantics, compatible
+replay, independent evidence, agreement between two evidence paths, or an
+unresolved row.
+`classification` remains the final value consumed by downstream tools.
+Its additional `source_debit_absent` value records an independently proved
+missing debit without claiming that a compatible replay established the
+reverted-frame mechanism.
+For direct source debits, the untraced classification path requires a successful
+stored source transaction receipt. The completed count is blank because no
+trace was inspected; a failed stored status is `receipt_inconsistent`.
+
+Historical flow exports preserve the final classifications plus
+`source_audit_classification_sources`, `source_audit_replay_classifications`,
+`source_audit_evidence_references`, and `source_audit_evidence_sha256`. Evidence
+resolved rows receive an evidence-specific method label rather than being
+described as trace-reproduced.
+
+## Source-audit summary JSON
+
+- `by_final_classification`: count and exact amount for each final evidence
+  classification.
+- `by_replay_classification`: the same breakdown for replay evidence alone.
+- `trace_proven_rollback_leakage_atto`: amount with compatible failed-frame
+  trace evidence.
+- `canonical_state_proven_source_debit_absence_atto`: amount whose missing
+  source debit is independently established without mechanism overclaiming.
+- `unbacked_cross_shard_credit_atto`: exact sum of the preceding two fields,
+  used as the historical-closure adjustment.
+- `unclassified_atto`: amount still lacking a final evidence classification.
+
+Reconciliation outputs using split cross-shard evidence must include both
+components and must not mix either with the legacy combined component.
+
+The packaged source-audit verification record binds the prior and rerun input
+hashes, compares the complete receipt identity set, reports the classification
+transition matrix, verifies independent-evidence digests and direct source
+receipt statuses, and asserts exact aggregate preservation.
 
 ## Staking-target audit CSVs
 

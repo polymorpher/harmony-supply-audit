@@ -13,6 +13,13 @@ The word “archive” is not enough by itself. The database must still contain
 every state trie, canonical header, body, receipt record, and lookup required
 by `manifests/checkpoints/checkpoints.json`.
 
+The destination databases must also retain complete per-receipt `cx` lookup
+indexes. A block-level `cxReceiptSpent` marker proves that a source receipt
+group was consumed, but does not record the destination block needed to apply a
+historical cutoff. If a receipt lookup is absent while its spent marker is
+present, `cross-shard-supply` aborts and reports the destination lookup index as
+incomplete rather than misreporting the receipt as pending.
+
 Run `db-preflight` before a long scan.
 
 ## Cold database rule

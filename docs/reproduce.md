@@ -104,6 +104,9 @@ bin/cross-shard-supply \
 Record the supported pending amount before comparing with another audit.
 
 Receipts to retired shards 2 and 3 are not silently included.
+The scan requires complete destination `cx` lookup indexes. A missing lookup
+paired with a block-level spent marker is evidence of an incomplete index, not
+an unspent receipt, and aborts the scan without publishing partial totals.
 
 ## 7. Assemble the factual ledger
 
@@ -237,10 +240,71 @@ rollback leakage only when its source debit occurred inside a failed or
 reverted execution frame.
 
 A failed precompile invocation alone is not such evidence. For traced source
-transactions, exactly one precompile call must complete locally; a failed
-ancestor then distinguishes rollback leakage from a valid debit. Traces with
-zero or multiple completed calls, or an outcome inconsistent with the stored
-transaction receipt, remain unclassified.
+transactions, exactly one precompile call must complete locally and its ABI
+amount, recipient, destination shard, and effective sender context must match
+the canonical receipt. The stored receipt and replay root must both succeed. A
+failed non-root ancestor then distinguishes rollback leakage from a valid
+debit. Traces with zero or multiple completed calls or a receipt-identity
+mismatch remain unclassified. A replay root inconsistent with the stored
+receipt is labeled `replay_incompatible`.
+
+Direct cross-shard transactions and direct calls to the precompile remain
+untraced, but their stored source transaction receipt must report success. A
+failed stored status is `receipt_inconsistent`, not a valid source debit.
+
+Current archive software is not necessarily a historical execution engine.
+Harmony commit `31752f21aa` changed the contract context used for precompiles
+reached through `DELEGATECALL`. A transaction executed before that code change
+can therefore fail when replayed by a current binary even when epoch rules are
+selected correctly.
+
+Resolve an incompatible or inconclusive replay only with independently
+verified canonical source-debit evidence:
+
+```sh
+python3 toolkit/scripts/forensics/cx-source-audit.py \
+  --rpc "$HARMONY_RPC_SHARD0" \
+  --independent-evidence "$OUT/forensics/source-debit-evidence.csv" \
+  --output "$OUT/forensics/source-audit.csv" \
+  <receipt-ledger.csv>
+```
+
+The evidence CSV header is:
+
+```text
+source_shard,destination_shard,source_block,source_block_hash,receipt_index,receipt_tx_hash,from,to,amount_atto,source_debit_status,evidence_type,evidence_reference,evidence_sha256
+```
+
+`source_debit_status` must be `absent` or `persisted`. The evidence row must
+repeat the full canonical receipt identity. `evidence_reference` is an absolute
+path or a path relative to the evidence CSV; the classifier reads that local
+artifact and verifies its lowercase `evidence_sha256`. Duplicate, unused, or
+malformed evidence, a failed stored source receipt, or a conflict with a
+conclusive compatible replay aborts the audit.
+
+An independently proved absent debit is classified as `source_debit_absent`,
+not `rollback_leak`. Absence establishes an unbacked destination credit but does
+not by itself prove which mechanism prevented the debit. A compatible replay
+showing the matching completed call inside a failed non-root frame supplies the
+additional mechanism evidence required for `rollback_leak`.
+
+Receipt ledgers must identify both shards. If an older destination-side ledger
+omits either field, pass `--source-shard` or `--destination-shard` explicitly;
+the classifier does not silently assume shard zero.
+
+Summarize all non-overlapping source-audit outputs before using them in
+reconciliation:
+
+```sh
+python3 toolkit/scripts/forensics/summarize-cx-source-audit.py \
+  --output "$OUT/forensics/source-audit-summary.json" \
+  "$OUT/forensics/source-audit-shard0.csv" \
+  "$OUT/forensics/source-audit-shard1.csv"
+```
+
+The summary reports trace-proven rollback and independently proved debit
+absence separately. Use `unbacked_cross_shard_credit_atto`, their exact sum, as
+the historical-closure adjustment. Do not add a targeted subset a second time.
 
 The offline regression suite includes a successful constructor that creates a
 receipt and catches a rejected duplicate invocation. To reproduce its trace

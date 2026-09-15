@@ -21,6 +21,7 @@ import (
 var (
 	receiptPrefix  = []byte("cxReceipt")
 	cxLookupPrefix = []byte("cx")
+	spentPrefix    = []byte("cxReceiptSpent")
 )
 
 type txLookupEntry struct {
@@ -124,22 +125,72 @@ func cxLookupKey(hash common.Hash) []byte {
 	return key
 }
 
+func spentKey(source uint32, number uint64) []byte {
+	key := make([]byte, len(spentPrefix)+4+8)
+	copy(key, spentPrefix)
+	offset := len(spentPrefix)
+	binary.BigEndian.PutUint32(key[offset:offset+4], source)
+	binary.BigEndian.PutUint64(key[offset+4:], number)
+	return key
+}
+
+func canonicalHashKey(number uint64) []byte {
+	key := make([]byte, 1+8+1)
+	key[0] = 'h'
+	binary.BigEndian.PutUint64(key[1:9], number)
+	key[9] = 'n'
+	return key
+}
+
 // readOptional distinguishes a missing key from an unreadable database without
 // relying on backend-specific not-found errors (ethdb has no shared sentinel).
-// Only failed Get calls need the additional existence check.
-func readOptional(db ethdb.KeyValueReader, key []byte) ([]byte, error) {
-	encoded, err := db.Get(key)
-	if err == nil {
-		return encoded, nil
+// Empty values also need an existence check so corrupt present values are not
+// mistaken for absent keys.
+func readOptional(db ethdb.KeyValueReader, key []byte) ([]byte, bool, error) {
+	encoded, getErr := db.Get(key)
+	if getErr == nil && len(encoded) > 0 {
+		return encoded, true, nil
 	}
 	exists, hasErr := db.Has(key)
 	if hasErr != nil {
-		return nil, fmt.Errorf("%w (existence check also failed: %v)", err, hasErr)
+		if getErr != nil {
+			return nil, false, fmt.Errorf("%w (existence check also failed: %v)", getErr, hasErr)
+		}
+		return nil, false, fmt.Errorf("existence check failed: %w", hasErr)
 	}
-	if exists {
-		return nil, err
+	if !exists {
+		return nil, false, nil
 	}
-	return nil, nil
+	if getErr != nil {
+		return nil, false, getErr
+	}
+	return encoded, true, nil
+}
+
+func readCanonicalHash(db ethdb.KeyValueReader, number uint64) (common.Hash, bool, error) {
+	encoded, found, err := readOptional(db, canonicalHashKey(number))
+	if err != nil {
+		return common.Hash{}, false, err
+	}
+	if !found {
+		return common.Hash{}, false, nil
+	}
+	if len(encoded) != common.HashLength {
+		return common.Hash{}, false, fmt.Errorf(
+			"canonical hash at block %d has length %d, want %d",
+			number,
+			len(encoded),
+			common.HashLength,
+		)
+	}
+	hash := common.BytesToHash(encoded)
+	if hash == (common.Hash{}) {
+		return common.Hash{}, false, fmt.Errorf(
+			"canonical hash at block %d is zero",
+			number,
+		)
+	}
+	return hash, true, nil
 }
 
 func sumReceipts(
@@ -188,10 +239,21 @@ func sumReceipts(
 			result.AfterCutoffGroups++
 			continue
 		}
-		canonicalHash := rawdb.ReadCanonicalHash(source, blockNumber)
-		if canonicalHash == (common.Hash{}) {
-			result.MissingCanonicalHashGroups++
-			continue
+		canonicalHash, found, err := readCanonicalHash(source, blockNumber)
+		if err != nil {
+			return directionTotals{}, fmt.Errorf(
+				"read source shard %d canonical hash at block %d: %w",
+				sourceShard,
+				blockNumber,
+				err,
+			)
+		}
+		if !found {
+			return directionTotals{}, fmt.Errorf(
+				"missing source shard %d canonical hash at block %d",
+				sourceShard,
+				blockNumber,
+			)
 		}
 		if canonicalHash != blockHash {
 			result.NonCanonicalReceiptGroups++
@@ -249,24 +311,85 @@ func sumReceipts(
 		spent := true
 		var destinationBlock uint64
 		for _, receipt := range receipts {
-			encoded, err := readOptional(destinationDB, cxLookupKey(receipt.TxHash))
+			encoded, found, err := readOptional(destinationDB, cxLookupKey(receipt.TxHash))
 			if err != nil {
 				return directionTotals{}, fmt.Errorf("read destination shard %d CX lookup %s: %w", destination, receipt.TxHash.Hex(), err)
 			}
-			if len(encoded) == 0 {
+			if !found {
+				marker, markerFound, markerErr := readOptional(
+					destinationDB,
+					spentKey(sourceShard, blockNumber),
+				)
+				if markerErr != nil {
+					return directionTotals{}, fmt.Errorf(
+						"read destination shard %d spent marker for source shard %d block %d after missing CX lookup %s: %w",
+						destination,
+						sourceShard,
+						blockNumber,
+						receipt.TxHash.Hex(),
+						markerErr,
+					)
+				}
+				if markerFound {
+					if len(marker) != 1 || marker[0] != 0 {
+						return directionTotals{}, fmt.Errorf(
+							"invalid destination shard %d spent marker %x for source shard %d block %d after missing CX lookup %s",
+							destination,
+							marker,
+							sourceShard,
+							blockNumber,
+							receipt.TxHash.Hex(),
+						)
+					}
+					return directionTotals{}, fmt.Errorf(
+						"destination shard %d CX lookup %s is missing despite a spent marker for source shard %d block %d; destination lookup index is incomplete",
+						destination,
+						receipt.TxHash.Hex(),
+						sourceShard,
+						blockNumber,
+					)
+				}
 				spent = false
 				break
+			}
+			if len(encoded) == 0 {
+				return directionTotals{}, fmt.Errorf("empty destination shard %d CX lookup %s", destination, receipt.TxHash.Hex())
 			}
 			var entry txLookupEntry
 			if err := rlp.DecodeBytes(encoded, &entry); err != nil {
 				return directionTotals{}, fmt.Errorf("decode CX lookup %s: %w", receipt.TxHash.Hex(), err)
 			}
 			cutoff, ok := destinationCutoffs[destination]
-			if !ok || entry.BlockIndex > cutoff {
+			if !ok {
+				return directionTotals{}, fmt.Errorf(
+					"missing cutoff for destination shard %d while checking CX lookup %s",
+					destination,
+					receipt.TxHash.Hex(),
+				)
+			}
+			if entry.BlockIndex > cutoff {
 				spent = false
 				break
 			}
-			if rawdb.ReadCanonicalHash(destinationDB, entry.BlockIndex) != entry.BlockHash {
+			canonicalHash, found, err := readCanonicalHash(destinationDB, entry.BlockIndex)
+			if err != nil {
+				return directionTotals{}, fmt.Errorf(
+					"read destination shard %d canonical hash at block %d for CX lookup %s: %w",
+					destination,
+					entry.BlockIndex,
+					receipt.TxHash.Hex(),
+					err,
+				)
+			}
+			if !found {
+				return directionTotals{}, fmt.Errorf(
+					"missing destination shard %d canonical hash at block %d for CX lookup %s",
+					destination,
+					entry.BlockIndex,
+					receipt.TxHash.Hex(),
+				)
+			}
+			if canonicalHash != entry.BlockHash {
 				spent = false
 				break
 			}

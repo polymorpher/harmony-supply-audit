@@ -44,6 +44,9 @@ lookup records at explicit shard cutoffs.
 A failed destination lookup read is not evidence that a receipt is pending.
 After a failed read, the scanner verifies that the key is absent; if the key
 exists or its existence cannot be checked, it aborts without publishing totals.
+An existing empty lookup value is malformed rather than absent. Source and
+destination canonical-hash reads use the same error-preserving checks; an
+unreadable, missing, malformed, or zero canonical hash aborts the scan.
 
 A receipt is included as pending only when:
 
@@ -99,6 +102,7 @@ distinguish:
 
 - valid source debit;
 - reverted-frame rollback leakage;
+- independently established source-debit absence without mechanism proof;
 - unresolved source behavior.
 
 Only canonical receipts with proved reverted source debit are classified as
@@ -108,20 +112,57 @@ For traced transactions, an invocation of the cross-shard precompile that
 itself returned an error did not create a receipt. In particular, a rejected
 second invocation must not turn a successful first debit into rollback leakage.
 The classifier requires exactly one locally completed precompile invocation;
-it counts rollback evidence only when an ancestor of that invocation failed.
-No completed invocation or multiple possible producers remain `unclassified`.
-These checks do not replace matching the canonical receipt to the source
-transaction and its transfer payload in the surrounding forensic workflow.
+that invocation's effective sender context, ABI amount, recipient, and
+destination shard must match the canonical receipt. `DELEGATECALL` preserves
+the parent execution context's effective sender. The classifier counts
+replay-based rollback evidence only when the stored receipt and replay root
+both succeed while a non-root ancestor of the matching completed invocation
+fails. A failed root cannot produce a canonical outgoing receipt and is never
+treated as rollback evidence. No completed invocation, multiple possible
+producers, or a receipt-identity mismatch remains `unclassified`.
+Address and `uint32` words are decoded from their low bytes exactly as Harmony's
+historical ABI decoder handled them; nonzero high padding is not rejected by
+the audit when the protocol accepted it.
 
 The trace's root success/failure must agree with the stored transaction receipt;
-a mismatch leaves the row `unclassified`. Matching statuses alone do not prove
-equivalence of the internal execution.
+a mismatch is recorded as `replay_incompatible`. Matching statuses alone do not
+prove equivalence of the internal execution. A failed stored source receipt
+paired with a purported canonical outgoing receipt is instead
+`receipt_inconsistent` and cannot be overridden by independent evidence.
 
 Historical re-execution must also reproduce the implementation used at the
 source height. An archive replay that rejects the precompile despite an existing
 canonical source receipt is conflicting evidence, not proof of the original
-debit. Resolve such rows using compatible historical execution or independent
-source-debit evidence; do not interpret `unclassified` as a zero-value adjustment.
+debit.
+
+One known incompatibility was introduced after the affected historical
+transactions by Harmony commit `31752f21aa`. The newer EVM dispatches a
+precompile reached through `DELEGATECALL` with the precompile address as the
+contract context, while the historical implementation retained the caller
+address. Because the cross-shard precompile checks `contract.Address()` for the
+value, a modern archive binary can reject a transaction that originally
+executed successfully. This code-path change is not made historical by passing
+an old epoch to the current binary.
+
+`replay_classification` records only what a compatible trace proves.
+`classification` is the final evidence classification. A
+`replay_incompatible` or otherwise inconclusive trace can be resolved with an
+optional independent source-debit evidence row. The row is bound to the full
+canonical receipt identity and its referenced local artifact's SHA-256 is
+verified. The two paths must agree when both are conclusive; a conflict aborts
+the audit. Independent evidence stating only that the source debit was absent
+yields `source_debit_absent`, because absence alone does not prove a
+reverted-frame mechanism. It remains `rollback_leak` only when compatible trace
+evidence also proves the failed inner frame. Evidence that the debit persisted
+yields `valid_source_debit`. Without independent evidence, an incompatible
+replay remains finally `unclassified`; it is never interpreted as a zero-value
+adjustment.
+
+`summarize-cx-source-audit.py` keeps mechanism-proven `rollback_leak` separate
+from canonical-state-proven `source_debit_absent`. Their sum is reported as
+`unbacked_cross_shard_credit_atto`, which is the named adjustment used for
+historical supply closure. This preserves the arithmetic without describing
+debit-absence-only rows as trace-reproduced rollback.
 
 The preferred shard-1 historical measurement is a direct account-trie scan at
 the matching historical root. When that root is unavailable, the audit derives
@@ -138,14 +179,14 @@ The residual at each checkpoint is:
 `S0 claims + S1 claims - genesis - pre-staking rewards - blk-rwd`
 
 minus named direct-state adjustments such as HIP-30 recovery, the reconstructed
-December incident, and cumulative rollback leakage.
+December incident, and cumulative unbacked cross-shard credits.
 
 `historical-closure.py` performs this calculation at every checkpoint and
 checks the change between checkpoints. The residual chain is an independent
 cross-check of shard-0-sourced leakage. It is not an independent check of
 shard-1-sourced leakage because the shard-1 derivation uses the same source
-classification; transaction traces are the primary evidence for that
-direction.
+classification; compatible transaction traces or separately recorded
+canonical source-debit evidence are the primary evidence for that direction.
 
 ## 8. Count HIP-30 recovery issuance
 
