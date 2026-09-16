@@ -8,12 +8,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SENSITIVE_PATHS = (
     "docs/findings/",
-    "results/2026-09-11/",
+    "results/20",
+    "manifests/releases/20",
     "embargoed/",
 )
 SENSITIVE_FILES = {
     "manifests/results.sha256",
-    "manifests/releases/2026-09-11.json",
 }
 TEXT_SUFFIXES = {
     ".csv",

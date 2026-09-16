@@ -39,7 +39,7 @@ results/**/*.tar.gz
 
 # Pre-publication embargo. These local files contain numerical findings.
 docs/findings/
-results/2026-09-11/
+results/20*/
 manifests/results.sha256
-manifests/releases/2026-09-11.json
+manifests/releases/20*.json
 embargoed/

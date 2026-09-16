@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RESULT_ROOT = ROOT / "results" / "2026-09-11"
+RESULTS_ROOT = ROOT / "results"
 OUTPUT = ROOT / "manifests" / "results.sha256"
 
 
@@ -20,10 +20,24 @@ def sha256(path):
 
 
 def main():
-    with (RESULT_ROOT / "index.json").open(encoding="utf-8") as source:
-        index = json.load(source)
-    paths = [RESULT_ROOT / entry["path"] for entry in index["entries"]]
-    paths.extend((RESULT_ROOT / "index.json", RESULT_ROOT.parent / "README.md"))
+    paths = [RESULTS_ROOT / "README.md"]
+    result_sets = 0
+    for result_root in sorted(RESULTS_ROOT.glob("20*")):
+        index_path = result_root / "index.json"
+        if not index_path.is_file():
+            continue
+        with index_path.open(encoding="utf-8") as source:
+            index = json.load(source)
+        if index["result_set"] != result_root.name:
+            raise ValueError(f"{index_path}: result-set name mismatch")
+        paths.extend(result_root / entry["path"] for entry in index["entries"])
+        paths.append(index_path)
+        readme = result_root / "README.md"
+        if readme.is_file():
+            paths.append(readme)
+        result_sets += 1
+    if not result_sets:
+        raise ValueError("no dated result sets found")
     rows = []
     for path in paths:
         if not path.is_file():

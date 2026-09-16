@@ -33,6 +33,7 @@ manifest:
 	python3 scripts/update-source-manifest.py
 
 private-manifest:
+	python3 scripts/update-result-index.py --results results/2026-09-16
 	python3 scripts/update-results-manifest.py
 	python3 scripts/update-source-manifest.py
 
