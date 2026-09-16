@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
+import csv
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -25,6 +27,19 @@ def parse_args():
             REPOSITORY_ROOT / "embargoed" / "historical-closure-input.json"
         ),
     )
+    parser.add_argument(
+        "--non-issuance-results",
+        default=str(REPOSITORY_ROOT / "results" / "2026-09-16"),
+    )
+    parser.add_argument(
+        "--non-issuance-release",
+        default=str(
+            REPOSITORY_ROOT
+            / "manifests"
+            / "releases"
+            / "2026-09-16.json"
+        ),
+    )
     return parser.parse_args()
 
 
@@ -36,6 +51,14 @@ def load(root, name):
 def load_path(path):
     with path.open(encoding="utf-8") as source:
         return json.load(source)
+
+
+def sha256(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(4 * 1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def cross_shard_components(by_name):
@@ -228,17 +251,126 @@ def main():
         raise ValueError("unexpected unknown staking-precompile target")
 
     treasury = load(root, "treasury-reclaim-inventory-summary.json")
-    treasury_meta = reconciliation["treasury_reclaim_inventory"]
+    treasury_meta = reconciliation["historical_treasury_routing_inventory"]
     if treasury["totals_atto"]["treasury_reclaim"] != treasury_meta[
         "treasury_reclaim_atto"
     ]:
-        raise ValueError("policy-scenario treasury total mismatch")
+        raise ValueError("historical treasury calculation mismatch")
+    if treasury["policy_status"] != "superseded":
+        raise ValueError("historical treasury policy is not marked superseded")
+
+    non_issuance = load(
+        Path(args.non_issuance_results), "migration-non-issuance-summary.json"
+    )
+    reconciliation_policy = reconciliation["migration_non_issuance_policy"]
+    if (
+        reconciliation_policy["treasury_destination"] is not None
+        or reconciliation_policy["available_for_other_use"]
+        or reconciliation_policy["old_chain_gross_claim_changed"]
+        or not reconciliation_policy["replacement_chain_issuance_reduced"]
+    ):
+        raise ValueError("reconciliation points to an invalid migration policy")
+    policy = non_issuance["policy"]
+    if policy["migration_treatment"] != "not_issued":
+        raise ValueError("current migration treatment is not non-issuance")
+    if (
+        policy["old_chain_gross_claim_changed"]
+        or not policy["replacement_chain_issuance_reduced"]
+        or policy["treasury_destination"] is not None
+        or policy["available_for_other_use"]
+    ):
+        raise ValueError("non-issuance policy semantics are inconsistent")
+    historical_treasury = int(treasury["totals_atto"]["treasury_reclaim"])
+    existing_non_issuance = int(
+        non_issuance["existing_non_issuance"]["not_issued_atto"]
+    )
+    if historical_treasury > existing_non_issuance:
+        raise ValueError("historical policy amount exceeds current non-issuance")
+
+    flow = load(root, "historical-exploit-flow-summary.json")
+    retained_from_flow = sum(
+        int(values["held_cap_atto"])
+        for values in flow["distribution"].values()
+    )
+    retained = int(
+        non_issuance["historical_hack_retained_initial_addresses"][
+            "not_issued_atto"
+        ]
+    )
+    if retained != retained_from_flow:
+        raise ValueError("historical retained-balance totals disagree")
+    if non_issuance["historical_hack_retained_initial_addresses"][
+        "overlap_with_existing_non_issuance_addresses"
+    ]:
+        raise ValueError("historical retained addresses overlap existing policy")
+    combined_not_issued = int(non_issuance["totals"]["not_issued_atto"])
+    if combined_not_issued != existing_non_issuance + retained:
+        raise ValueError("combined non-issuance total mismatch")
+    if int(non_issuance["totals"]["gross_cutoff_claim_atto"]) != ledger_total:
+        raise ValueError("non-issuance gross claim does not match cutoff ledger")
+    remaining = int(
+        non_issuance["totals"][
+            "remaining_full_claim_after_non_issuance_atto"
+        ]
+    )
+    if remaining + combined_not_issued != ledger_total:
+        raise ValueError("gross claim does not close after non-issuance")
+
+    retained_csv = (
+        REPOSITORY_ROOT
+        / "artifacts"
+        / "historical-hacks-investigation-20260916"
+        / non_issuance["outputs"]["retained_not_issued_csv"]
+    )
+    if sha256(retained_csv) != non_issuance["outputs"][
+        "retained_not_issued_csv_sha256"
+    ]:
+        raise ValueError("retained non-issuance CSV hash mismatch")
+    with retained_csv.open(newline="") as source:
+        retained_rows = 0
+        retained_csv_total = 0
+        retained_addresses = set()
+        for row in csv.DictReader(source):
+            retained_rows += 1
+            address = row["address_hex"].lower()
+            if address in retained_addresses:
+                raise ValueError(f"duplicate retained address: {address}")
+            retained_addresses.add(address)
+            amount = int(row["retained_cap_atto"])
+            if amount != min(
+                int(row["initial_distribution_atto"]),
+                int(row["cutoff_balance_atto"]),
+            ):
+                raise ValueError(f"invalid retained cap: {address}")
+            if row["migration_treatment"] != "not_issued":
+                raise ValueError(f"retained address is not terminal: {address}")
+            evidence = retained_csv.parent / row["source_evidence"]
+            if not evidence.is_file():
+                raise FileNotFoundError(evidence)
+            retained_csv_total += amount
+    if retained_rows != non_issuance["outputs"]["retained_not_issued_rows"]:
+        raise ValueError("retained non-issuance CSV row-count mismatch")
+    if retained_csv_total != retained:
+        raise ValueError("retained non-issuance CSV total mismatch")
+
+    release = load_path(Path(args.non_issuance_release))
+    assets = {asset["name"]: asset for asset in release["assets"]}
+    retained_asset = assets.get(retained_csv.name)
+    if retained_asset is None:
+        raise ValueError("retained non-issuance CSV missing from release manifest")
+    if (
+        retained_asset["bytes"] != retained_csv.stat().st_size
+        or retained_asset["rows"] != retained_rows
+        or retained_asset["sha256"] != sha256(retained_csv)
+    ):
+        raise ValueError("retained non-issuance release metadata mismatch")
 
     print(
         "PASS reconciliation: "
         f"state_gap_atto={state_gap} "
         f"claim_gap_atto={claim_gap} "
-        f"known_peak_claim_inflation_atto={known_peak}"
+        f"known_peak_claim_inflation_atto={known_peak} "
+        f"not_issued_atto={combined_not_issued}"
     )
 
 
