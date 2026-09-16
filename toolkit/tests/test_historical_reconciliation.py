@@ -341,6 +341,34 @@ class HistoricalReconciliationTest(unittest.TestCase):
             ]
         )
 
+    def test_treasury_policy_is_marked_superseded(self):
+        reconciliation = {
+            "treasury_reclaim_inventory": {
+                "treasury_reclaim_atto": "10"
+            }
+        }
+        corrected = package_results.correct_migration_policy_labels(
+            reconciliation, "reconciliation.json"
+        )
+        self.assertNotIn("treasury_reclaim_inventory", corrected)
+        self.assertEqual(
+            corrected["historical_treasury_routing_inventory"][
+                "policy_status"
+            ],
+            "superseded",
+        )
+        self.assertEqual(
+            corrected["migration_non_issuance_policy"][
+                "replacement_chain_issuance_reduced"
+            ],
+            True,
+        )
+        self.assertIsNone(
+            corrected["migration_non_issuance_policy"][
+                "treasury_destination"
+            ]
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
