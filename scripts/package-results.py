@@ -216,6 +216,55 @@ def correct_max_rate_labels(value, target_name):
     return value
 
 
+def correct_migration_policy_labels(value, target_name):
+    current_summary = "results/2026-09-16/migration-non-issuance-summary.json"
+    if target_name == "reconciliation.json":
+        rename_key(
+            value,
+            "treasury_reclaim_inventory",
+            "historical_treasury_routing_inventory",
+        )
+        historical = value["historical_treasury_routing_inventory"]
+        historical["policy_status"] = "superseded"
+        historical["current_treatment"] = (
+            "the reviewed amount is not issued on the replacement chain"
+        )
+        value["migration_non_issuance_policy"] = {
+            "current_summary": current_summary,
+            "old_chain_gross_claim_changed": False,
+            "replacement_chain_issuance_reduced": True,
+            "treasury_destination": None,
+            "available_for_other_use": False,
+        }
+    if target_name in {
+        "extra-mint-blacklist-reclaim-summary.json",
+        "treasury-reclaim-inventory-summary.json",
+    }:
+        rename_key(value, "policy", "historical_treasury_policy")
+        value["policy_status"] = "superseded"
+        value["current_treatment"] = (
+            "the selected amount is not issued on the replacement chain; "
+            "the historical treasury calculation is retained only as evidence"
+        )
+        value["current_policy_summary"] = current_summary
+    if target_name in {
+        "blacklisted-address-cutoff-summary.json",
+        "reported-wallet-theft-perpetrator-cutoff-summary.json",
+        "wallet-theft-report-coverage.json",
+    }:
+        rename_key(value, "migration_policy", "historical_migration_policy")
+        value["current_policy_summary"] = current_summary
+    if target_name == "burn-address-audit.json":
+        value["migration_treatment"] = {
+            "old_chain_balance_accounting": "included",
+            "replacement_chain_issuance": "not_issued",
+            "treasury_destination": None,
+            "available_for_other_use": False,
+            "current_policy_summary": current_summary,
+        }
+    return value
+
+
 def csv_rows(path):
     with path.open(newline="") as source:
         return sum(1 for _ in csv.reader(source)) - 1
@@ -379,10 +428,10 @@ def main():
         "extra-mint-blacklist-burn-path-audit.json": "Assembled from a recorded top-level transaction-history check; no standalone generator was preserved.",
         "wallet-theft-report-coverage.json": "Addresses extracted from named investigation reports; not a legal attribution.",
         "blacklist-operations-history.json": "Git and operations-history extraction; not chain state.",
-        "extra-mint-blacklist-reclaim.csv": "Historical allocation-policy scenario; not part of supply arithmetic.",
-        "extra-mint-blacklist-reclaim-summary.json": "Historical allocation-policy scenario; not part of supply arithmetic.",
-        "treasury-reclaim-inventory.csv": "Historical allocation-policy scenario; not part of supply arithmetic.",
-        "treasury-reclaim-inventory-summary.json": "Historical allocation-policy scenario; not part of supply arithmetic.",
+        "extra-mint-blacklist-reclaim.csv": "Superseded historical treasury calculation; the selected amount is now not issued.",
+        "extra-mint-blacklist-reclaim-summary.json": "Superseded historical treasury calculation; the selected amount is now not issued.",
+        "treasury-reclaim-inventory.csv": "Superseded historical treasury-routing inventory retained as calculation evidence.",
+        "treasury-reclaim-inventory-summary.json": "Superseded historical treasury-routing inventory retained as calculation evidence.",
     }
 
     entries = []
@@ -398,9 +447,17 @@ def main():
             if not isinstance(value, dict):
                 raise ValueError(f"expected JSON object: {source}")
             value = correct_max_rate_labels(value, target_name)
+            value = correct_migration_policy_labels(value, target_name)
             normalization = "absolute machine paths replaced; factual numeric fields unchanged"
             if target_name in {"reconciliation.json", "max-rate-opening-payout-audit.json"}:
                 normalization += "; max-rate accounting labels corrected"
+            if target_name in {
+                "reconciliation.json",
+                "burn-address-audit.json",
+                "extra-mint-blacklist-reclaim-summary.json",
+                "treasury-reclaim-inventory-summary.json",
+            }:
+                normalization += "; superseded treasury policy marked"
             value["_provenance"] = {
                 "classification": classification,
                 "source_name": source.name,
