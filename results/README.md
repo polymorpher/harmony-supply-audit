@@ -1,7 +1,12 @@
 # Results
 
-The dated result set is temporarily excluded from Git under the numerical
-embargo. It contains totals, component breakdowns, and address-level data.
+The dated result sets are temporarily excluded from Git under the numerical
+embargo. They contain totals, component breakdowns, and address-level data.
+
+- `2026-09-11/` contains factual cutoff and historical incident results plus
+  explicitly superseded treasury calculations.
+- `2026-09-16/` contains the current migration non-issuance policy overlay and
+  refreshed retained historical-hack evidence.
 
 Public reviewers should follow `docs/reproduce.md` and record their own results
 before comparing them with the original audit.
@@ -20,7 +25,8 @@ make verify-private
 ```
 
 This derives the cutoff gaps from scanner outputs and a reconstructed endpoint
-formula, then reruns the historical residual chain.
+formula, reruns the historical residual chain, and verifies the current
+non-issuance result and retained-address CSV.
 
 ## Large release assets
 

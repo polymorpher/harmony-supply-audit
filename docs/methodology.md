@@ -69,6 +69,26 @@ All arithmetic uses integer atto-ONE:
 Decimal strings are display values produced only after integer totals are
 final.
 
+### Apply migration non-issuance separately
+
+The factual ledger is never rewritten to remove incident balances. A separate
+policy overlay calculates:
+
+`replacement-chain issuance = gross cutoff claim - not issued`
+
+The non-issuance audit:
+
+1. preserves exact reviewed extra-mint portions instead of omitting an entire
+   mixed claim;
+2. includes full reviewed burn/inaccessible and wallet-theft amounts;
+3. caps retained historical-hack value per initial recipient at
+   `min(initial incident-contract distribution, cutoff balance)`;
+4. rejects duplicate addresses across inventories;
+5. emits no destination address for a not-issued amount.
+
+No replacement token or staking-vault share is created for the omitted amount.
+It is not a treasury reserve.
+
 ## 6. Rebuild the endpoint formula
 
 The public endpoint does not sum account state. Its code calculates:
@@ -233,9 +253,18 @@ Address-list audits:
 - normalize Bech32 and hexadecimal forms;
 - deduplicate entries;
 - join to the exact cutoff ledger;
-- keep report-derived labels separate from chain-derived balances.
+- keep report-derived labels separate from chain-derived balances;
+- keep reported victims separate from reviewed perpetrator or direct-recipient
+  roles;
+- verify retained historical-incident balances against fixed-block RPC and
+  cutoff state.
 
-Allocation or treasury routing is not part of the supply calculation.
+`build-non-issuance-audit.py` combines the reviewed existing inventory with
+the retained historical-incident cap, verifies no overlap, and proves:
+
+`gross cutoff claim = remaining full claim + not issued`.
+
+This remains a policy overlay, not a change to old-chain supply accounting.
 
 ## 11. Verify independently
 

@@ -27,17 +27,21 @@ Included:
 - historical state and exploit-flow analysis;
 - staking-target audits;
 - burn, blacklist, and wallet-theft address evidence;
+- retained historical-incident balances and migration non-issuance checks;
 - compact result metadata and checksums.
 
 Not included:
 
 - wallet preimage recovery;
 - migration eligibility thresholds;
-- treasury destination policy implementation;
+- final routing and deployment implementation;
 - final migration allocation generation.
 
-Those belong in the separate `harmony-migration` project. Historical
-policy-scenario figures are retained locally under the numerical embargo.
+Those belong in the separate `harmony-migration` project. This audit records
+the current policy input: reviewed extra-mint, inaccessible, wallet-theft, and
+retained historical-hack amounts are not recreated on the replacement chain.
+They are not transferred to treasury and are not available for another use.
+Exact policy-scenario figures remain under the numerical embargo.
 
 ## Quick start
 

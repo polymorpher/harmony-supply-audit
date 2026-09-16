@@ -92,6 +92,9 @@ An early routing attempt assigned the entire supplied list to treasury. That
 was wrong and was discarded. The corrected scenario caps a direct
 extra-mint-recipient reclaim by exact unreturned extra mint.
 
+This was the policy at that time. It was superseded by the later non-issuance
+decision.
+
 The complete 2021–2022 operational blacklist was not found. Further work is
 deferred until former DevOps staff or node backups provide the original files.
 
@@ -107,6 +110,34 @@ deferred until former DevOps staff or node backups provide the original files.
   and rerun the historical closure.
 - Added explicit limits for the pre-existing baseline, shard-1 classification,
   RPC-derived December reconstruction, and report-assigned address labels.
+
+## September 15–16: non-issuance policy
+
+- Replaced treasury routing for reviewed incident amounts with terminal
+  `not_issued` treatment.
+- Kept the factual old-chain cutoff ledger unchanged.
+- Required no replacement token or staking-vault share to be created for
+  not-issued amounts.
+- Preserved only the exact reviewed extra-mint portion on mixed rows; legitimate
+  remainders stay eligible under the separate migration policy.
+- Expanded wallet-theft evidence into explicitly report-identified
+  perpetrators, transaction-linked recipients, and separate reported victims.
+- Kept victims outside non-issuance unless independent evidence supports a
+  different role.
+
+## September 16: retained historical-hack balances
+
+- Rechecked all initial recipients of the May 2025 and April 2026 incident
+  distribution contracts at one fixed block.
+- Confirmed that the refreshed balances matched the cutoff snapshot.
+- Capped each retained amount by both initial incident-contract distribution
+  and cutoff balance.
+- Verified that the positive retained addresses did not overlap the existing
+  non-issuance inventory.
+- Added the capped retained amount to migration non-issuance without assigning
+  it to treasury.
+- Kept exchange reserves, mixed downstream balances, and reported victims
+  outside this amount.
 
 ## Public package extraction
 

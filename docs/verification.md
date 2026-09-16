@@ -21,8 +21,10 @@ make verify-private
 
 That command verifies result hashes and finding provenance, reconstructs the
 cutoff formula from its component inputs, derives the state and claim gaps from
-the cutoff scanner outputs, and reruns the historical residual chain. It does
-not merely check that fields inside one reconciliation JSON add up.
+the cutoff scanner outputs, reruns the historical residual chain, and verifies
+the current non-issuance summary, every retained-address row, and its large
+release-asset manifest. It does not merely check that fields inside one
+reconciliation JSON add up.
 
 ## Source verification
 
@@ -59,7 +61,11 @@ A full verifier should:
     cross-shard credits and valid debits;
 12. run the historical residual chain;
 13. run the native and precompile staking-target audits;
-14. save the deterministic fields and CSV hashes before receiving the original
+14. rebuild the non-issuance policy overlay from the reviewed existing
+    inventory and retained historical-incident balances;
+15. verify that no not-issued amount has a destination or creates a replacement
+    asset, and that gross claim equals remaining claim plus not issued;
+16. save the deterministic fields and CSV hashes before receiving the original
    audit results.
 
 The original result manifest will be published after the independent-review
@@ -103,6 +109,10 @@ The max-rate peak duplicated-claim decomposition remains curated external
 evidence derived from Harmony operations artifacts. The independently
 recomputed state-versus-formula residual verifies its net effect, not every
 row of that peak decomposition.
+
+The retained historical-incident balance is RPC-derived and capped by original
+distribution. Classifying that cap as `not_issued` is a policy scenario. These
+two evidence classes remain separate in the result metadata.
 
 ## Public checkpoint identifiers
 

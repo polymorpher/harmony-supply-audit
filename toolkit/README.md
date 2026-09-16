@@ -38,11 +38,13 @@ The binaries are written to `bin/`.
 - `forensics/`: historical staking, receipt-source, exploit-flow, and
   undelegation-mint analysis, including shard-1 historical-balance derivation
   and destination-receipt mapping.
-- `addresses/`: join address lists to an exact cutoff ledger.
+- `addresses/`: join address lists to an exact cutoff ledger and verify the
+  migration non-issuance overlay for reviewed incident balances.
 - `cutoff/`: verify canonical intervals, changed state, created accounts, and
   pending receipts.
 - `verify/`: cutoff-formula reconstruction, historical residual closure, and
   checks over locally generated result metadata.
 
-Allocation thresholds and treasury destination logic are intentionally kept in
-the separate `harmony-migration` project.
+This repository verifies non-issuance policy inputs but does not build the
+final allocation. Eligibility thresholds, destination routing, and deployment
+logic remain in the separate `harmony-migration` project.

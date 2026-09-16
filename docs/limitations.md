@@ -132,6 +132,10 @@ The public curated input identifies addresses only as
 `report-identified`. This is source attribution, not an independent legal or
 identity finding by this audit.
 
+Current policy also distinguishes a direct transaction-linked theft recipient
+from an address explicitly labeled as a perpetrator. Reported victims are
+recorded separately and are not automatically omitted from issuance.
+
 ## Long-pending cross-shard receipts
 
 Supported source-debited receipts that were never applied at the destination
@@ -141,9 +145,24 @@ ordinary circulating balances.
 
 ## Migration policy
 
-Treasury-routing figures are retained locally under the numerical embargo as a
-historical policy scenario. This repository does not create the final migration
-allocation or choose the treasury destination.
+Reviewed incident amounts are now `not_issued` on the replacement chain. They
+have no destination address, do not become treasury assets, and are unavailable
+for another use. Historical treasury-routing figures remain only as superseded
+calculation evidence.
+
+The retained May/April amount is capped by initial incident-contract
+distribution and cutoff balance. This proves balance-supported incident
+provenance, not that every address is controlled by one person or every
+retained unit was newly created. Exchange reserves and mixed downstream
+balances are not added.
+
+This decision does not convert every custody or reserve route into
+non-issuance. Dedicated backing reserves such as WONE custody remain separate
+migration policies.
+
+This repository verifies the policy overlay but does not create the final
+migration allocation. Thresholds, contract handling, custody, and deployment
+remain in `harmony-migration`.
 
 ## Reproducible bytes
 

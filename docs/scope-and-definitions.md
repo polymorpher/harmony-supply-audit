@@ -2,7 +2,7 @@
 
 ## What this audit measures
 
-The audit uses four separate quantities. They must not be treated as
+The audit uses five separate quantities. They must not be treated as
 interchangeable.
 
 ### Account and staking claims
@@ -16,6 +16,19 @@ This is the sum recognized by chain state:
 - supported source-debited cross-shard receipts that had not arrived.
 
 The cutoff total is withheld during the independent-review period.
+
+### Replacement-chain issued amount
+
+This is a migration policy result:
+
+`gross cutoff claim - reviewed not-issued amounts`
+
+`not_issued` is terminal. No replacement token or staking-vault share is
+created, no treasury receives the amount, and it is not available for another
+use.
+
+For an extra-mint recipient, only the reviewed extra-mint portion is omitted.
+Any legitimate remainder stays eligible under the separate migration policy.
 
 ### State-resident formula gap
 
@@ -69,7 +82,11 @@ Therefore:
 
 - burn balances remain in the gross state sum;
 - burn balances are not deducted from bug-created amounts;
-- any migration destination change is a separate allocation-policy decision.
+- reviewed burn and inaccessible balances are not issued on the replacement
+  chain.
+
+This does not claim that the old-chain balances disappeared. It separates
+factual old-chain accounting from replacement-chain issuance.
 
 ## Address formats
 

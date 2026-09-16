@@ -8,7 +8,8 @@ The audit's numerical outputs are temporarily withheld. This includes:
 - the total account and staking claim;
 - the difference from the public supply endpoint;
 - component and incident amounts;
-- per-address balances, payouts, burns, and treasury-policy scenarios;
+- per-address balances, payouts, burns, and current non-issuance scenarios;
+- superseded historical treasury calculations;
 - result tables and machine-readable result files.
 
 Harmony reviewers should run the code against their own archive databases and

@@ -27,7 +27,7 @@ export HARMONY_DB_SHARD0=/absolute/path/to/harmony_db_0
 export HARMONY_DB_SHARD1=/absolute/path/to/harmony_db_1
 export OUT="$PWD/artifacts/reproduction-2026-09-10"
 
-mkdir -p "$OUT/state" "$OUT/supply" "$OUT/forensics"
+mkdir -p "$OUT/state" "$OUT/supply" "$OUT/forensics" "$OUT/policy"
 ```
 
 Stop Harmony before using the original LevelDB, or use a consistent cold
@@ -370,7 +370,37 @@ The complete historical command sequence is described in
 [`process-history.md`](process-history.md) and the sanitized `repro/`
 templates.
 
-## 13. Public source verification
+## 13. Rebuild the migration non-issuance audit
+
+This step is separate from the factual claim ledger. Obtain:
+
+- the reviewed current non-issuance inventory from `harmony-migration`;
+- the retained initial-recipient balance CSV and summary from the September 16
+  historical-hacks evidence package;
+- the factual cutoff claim summary.
+
+Then run:
+
+```sh
+python3 toolkit/scripts/addresses/build-non-issuance-audit.py \
+  --existing-non-issuance /path/to/non-issuance-inventory.csv \
+  --retained-balances /path/to/initial-address-current-balances.csv \
+  --retained-summary /path/to/current-state-summary.json \
+  --cutoff-claim-summary "$OUT/supply/actual-supply-ledger-summary.json" \
+  --output-csv "$OUT/policy/not-issued-retained-initial-addresses.csv" \
+  --summary-output "$OUT/policy/migration-non-issuance-summary.json"
+```
+
+The script checks every retained cap, source evidence path, category subtotal,
+and address overlap. It verifies:
+
+`gross cutoff claim = remaining full claim + not issued`.
+
+The result must state that the old-chain claim is unchanged, replacement-chain
+issuance is reduced, the treasury destination is null, and the amount is not
+available for another use.
+
+## 14. Public source verification
 
 Without a database:
 
@@ -383,7 +413,7 @@ present in a public clone during the independent-review period.
 
 Local maintainers with the ignored result set can run `make verify-private`.
 
-## 14. Optional protocol integration test
+## 15. Optional protocol integration test
 
 The maintained scanners do not need Harmony source. To run the separate
 fake-wrapper protocol regression test:

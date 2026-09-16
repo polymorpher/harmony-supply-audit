@@ -199,10 +199,24 @@ The inputs under `inputs/curated/` retain:
 An address role records the source report's wording. It is not an independent
 identity or legal finding by this audit.
 
-## Treasury scenario fields
+## Non-issuance policy fields
 
-Treasury scenario files are retained locally under the numerical embargo as
-historical context, not maintained allocation code:
+Current policy summaries use:
+
+- `not_issued_atto`: amount for which no replacement asset is created.
+- `migration_treatment`: `not_issued`.
+- `treasury_destination`: null.
+- `available_for_other_use`: false.
+- `remaining_full_claim_after_non_issuance_atto`: gross factual claim minus
+  current non-issuance.
+- `retained_cap_atto`: lesser of an initial incident-contract distribution and
+  the cutoff balance at that address.
+
+For partial extra-mint rows, `not_issued_atto` applies only to the reviewed
+extra-mint portion. A separate field records the legitimate remainder.
+
+Historical treasury scenario files are retained locally under the numerical
+embargo only as calculation evidence:
 
 - `extra_mint_atto`;
 - `verified_burn_atto`;
@@ -211,4 +225,6 @@ historical context, not maintained allocation code:
 - `remaining_original_address_allocation_atto`;
 - decision and evidence notes.
 
-These fields do not change `total_claim_atto`.
+The historical treasury destination is superseded. Neither historical nor
+current policy fields change factual `total_claim_atto`; current non-issuance
+reduces only replacement-chain asset creation.
