@@ -1,4 +1,6 @@
-.PHONY: setup build test test-go test-python verify verify-private manifest private-manifest check-public integration-test
+.PHONY: setup build test test-go test-python verify verify-private migration-policy manifest private-manifest check-public integration-test
+
+MIGRATION_REPO ?= ../harmony-migration
 
 setup:
 	cd toolkit && GOWORK=off go mod download
@@ -29,11 +31,24 @@ verify-private: verify
 	python3 scripts/verify-results.py
 	python3 scripts/verify-provenance.py
 
+migration-policy:
+	python3 toolkit/scripts/verify/migration-policy-reconciliation.py \
+		--stage-policy "$(MIGRATION_REPO)/artifacts/migration-policy-20260917/migration-stage-policy.csv" \
+		--stage-summary "$(MIGRATION_REPO)/artifacts/migration-policy-20260917/migration-stage-summary.json" \
+		--migration-summary "$(MIGRATION_REPO)/artifacts/cutoff-20260910/claims/all-address-migration-claims-cutoff-summary.json" \
+		--existing-non-issuance "$(MIGRATION_REPO)/artifacts/supply-reconciliation-20260911/non-issuance-inventory.csv" \
+		--historical-retention artifacts/historical-hacks-investigation-20260916/not-issued-retained-initial-addresses.csv \
+		--supply-non-issuance-summary results/2026-09-16/migration-non-issuance-summary.json \
+		--output results/2026-09-17/migration-policy-reconciliation.json \
+		--report docs/findings/migration-policy-reconciliation.md \
+		--replace
+
 manifest:
 	python3 scripts/update-source-manifest.py
 
 private-manifest:
 	python3 scripts/update-result-index.py --results results/2026-09-16
+	python3 scripts/update-result-index.py --results results/2026-09-17
 	python3 scripts/update-results-manifest.py
 	python3 scripts/update-source-manifest.py
 
