@@ -217,7 +217,12 @@ def correct_max_rate_labels(value, target_name):
 
 
 def correct_migration_policy_labels(value, target_name):
-    current_summary = "results/2026-09-16/migration-non-issuance-summary.json"
+    component_summary = (
+        "results/2026-09-16/migration-non-issuance-summary.json"
+    )
+    composite_summary = (
+        "results/2026-09-17/migration-policy-reconciliation.json"
+    )
     if target_name == "reconciliation.json":
         rename_key(
             value,
@@ -230,9 +235,11 @@ def correct_migration_policy_labels(value, target_name):
             "the reviewed amount is not issued on the replacement chain"
         )
         value["migration_non_issuance_policy"] = {
-            "current_summary": current_summary,
+            "incident_component_summary": component_summary,
+            "composite_policy_summary": composite_summary,
             "old_chain_gross_claim_changed": False,
-            "replacement_chain_issuance_reduced": True,
+            "migration_allocation_reduced": True,
+            "fixed_erc20_total_supply_changed": False,
             "treasury_destination": None,
             "available_for_other_use": False,
         }
@@ -246,21 +253,25 @@ def correct_migration_policy_labels(value, target_name):
             "the selected amount is not issued on the replacement chain; "
             "the historical treasury calculation is retained only as evidence"
         )
-        value["current_policy_summary"] = current_summary
+        value["incident_non_issuance_component_summary"] = component_summary
+        value["composite_policy_summary"] = composite_summary
     if target_name in {
         "blacklisted-address-cutoff-summary.json",
         "reported-wallet-theft-perpetrator-cutoff-summary.json",
         "wallet-theft-report-coverage.json",
     }:
         rename_key(value, "migration_policy", "historical_migration_policy")
-        value["current_policy_summary"] = current_summary
+        value["incident_non_issuance_component_summary"] = component_summary
+        value["composite_policy_summary"] = composite_summary
     if target_name == "burn-address-audit.json":
         value["migration_treatment"] = {
             "old_chain_balance_accounting": "included",
-            "replacement_chain_issuance": "not_issued",
+            "migration_allocation": "not_issued",
+            "fixed_erc20_total_supply_changed": False,
             "treasury_destination": None,
             "available_for_other_use": False,
-            "current_policy_summary": current_summary,
+            "incident_non_issuance_component_summary": component_summary,
+            "composite_policy_summary": composite_summary,
         }
     return value
 

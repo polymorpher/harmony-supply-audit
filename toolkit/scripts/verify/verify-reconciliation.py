@@ -267,7 +267,11 @@ def main():
         reconciliation_policy["treasury_destination"] is not None
         or reconciliation_policy["available_for_other_use"]
         or reconciliation_policy["old_chain_gross_claim_changed"]
-        or not reconciliation_policy["replacement_chain_issuance_reduced"]
+        or not reconciliation_policy["migration_allocation_reduced"]
+        or reconciliation_policy["fixed_erc20_total_supply_changed"]
+        or not reconciliation_policy["composite_policy_summary"].endswith(
+            "2026-09-17/migration-policy-reconciliation.json"
+        )
     ):
         raise ValueError("reconciliation points to an invalid migration policy")
     policy = non_issuance["policy"]
@@ -275,9 +279,13 @@ def main():
         raise ValueError("current migration treatment is not non-issuance")
     if (
         policy["old_chain_gross_claim_changed"]
-        or not policy["replacement_chain_issuance_reduced"]
+        or not policy["migration_allocation_reduced"]
+        or policy["fixed_erc20_total_supply_changed"]
         or policy["treasury_destination"] is not None
         or policy["available_for_other_use"]
+        or not policy["composite_policy_summary"].endswith(
+            "2026-09-17/migration-policy-reconciliation.json"
+        )
     ):
         raise ValueError("non-issuance policy semantics are inconsistent")
     historical_treasury = int(treasury["totals_atto"]["treasury_reclaim"])

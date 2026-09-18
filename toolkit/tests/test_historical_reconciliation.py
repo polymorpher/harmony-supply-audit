@@ -359,9 +359,20 @@ class HistoricalReconciliationTest(unittest.TestCase):
         )
         self.assertEqual(
             corrected["migration_non_issuance_policy"][
-                "replacement_chain_issuance_reduced"
+                "migration_allocation_reduced"
             ],
             True,
+        )
+        self.assertFalse(
+            corrected["migration_non_issuance_policy"][
+                "fixed_erc20_total_supply_changed"
+            ]
+        )
+        self.assertEqual(
+            corrected["migration_non_issuance_policy"][
+                "composite_policy_summary"
+            ],
+            "results/2026-09-17/migration-policy-reconciliation.json",
         )
         self.assertIsNone(
             corrected["migration_non_issuance_policy"][

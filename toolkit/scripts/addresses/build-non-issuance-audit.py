@@ -304,11 +304,19 @@ def main():
             "all_balances_unchanged_from_cutoff": True,
         },
         "policy": {
+            "scope": (
+                "incident and retained-fund non-issuance component; not the "
+                "complete staged migration policy"
+            ),
             "migration_treatment": "not_issued",
             "old_chain_gross_claim_changed": False,
-            "replacement_chain_issuance_reduced": True,
+            "migration_allocation_reduced": True,
+            "fixed_erc20_total_supply_changed": False,
             "treasury_destination": None,
             "available_for_other_use": False,
+            "composite_policy_summary": (
+                "results/2026-09-17/migration-policy-reconciliation.json"
+            ),
             "retained_historical_hack_rule": (
                 "for each initial recipient, omit min(initial incident-contract "
                 "distribution, cutoff balance)"
