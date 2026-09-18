@@ -9,7 +9,7 @@ The audit's numerical outputs are temporarily withheld. This includes:
 - the difference from the public supply endpoint;
 - component and incident amounts;
 - per-address balances, payouts, burns, and current non-issuance scenarios;
-- superseded historical treasury calculations;
+- superseded historical destination calculations;
 - result tables and machine-readable result files.
 
 Harmony reviewers should run the code against their own archive databases and

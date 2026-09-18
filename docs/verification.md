@@ -26,6 +26,10 @@ the current non-issuance summary, every retained-address row, and its large
 release-asset manifest. It does not merely check that fields inside one
 reconciliation JSON add up.
 
+In these checks, `not_issued` means retained in the
+[Year 2025 Supply Reserve](year-2025-supply-reserve.md), not allocated to a
+claimant in the current migration.
+
 ## Source verification
 
 `manifests/source.sha256` covers the public source package.

@@ -8,7 +8,8 @@ Start with:
 4. [`reproduce.md`](reproduce.md)
 5. [`verification.md`](verification.md)
 6. [`limitations.md`](limitations.md)
-7. [`numerical-embargo.md`](numerical-embargo.md)
+7. [`year-2025-supply-reserve.md`](year-2025-supply-reserve.md)
+8. [`numerical-embargo.md`](numerical-embargo.md)
 
 Historical sequence:
 

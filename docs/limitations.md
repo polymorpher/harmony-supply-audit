@@ -146,9 +146,11 @@ ordinary circulating balances.
 ## Migration policy
 
 Reviewed incident amounts are now `not_issued` on the replacement chain. They
-have no destination address, do not become treasury assets, and are unavailable
-for another use. Historical treasury-routing figures remain only as superseded
-calculation evidence.
+are not allocated to claimants; instead, they remain in the **Year 2025 Supply
+Reserve**. The current migration does not allocate them to another purpose.
+Historical destination-routing figures remain only as superseded calculation
+evidence.
+See [`year-2025-supply-reserve.md`](year-2025-supply-reserve.md).
 
 The retained May/April amount is capped by initial incident-contract
 distribution and cutoff balance. This proves balance-supported incident

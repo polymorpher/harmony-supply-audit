@@ -205,8 +205,10 @@ Current policy summaries use:
 
 - `not_issued_atto`: amount for which no replacement asset is created.
 - `migration_treatment`: `not_issued`.
-- `treasury_destination`: null.
-- `available_for_other_use`: false.
+- routing destination: none; the amount remains in the **Year 2025 Supply
+  Reserve**.
+- `available_for_other_use`: false means the current migration does not
+  allocate the amount to another purpose.
 - `remaining_full_claim_after_non_issuance_atto`: gross factual claim minus
   current non-issuance.
 - `retained_cap_atto`: lesser of an initial incident-contract distribution and
@@ -215,16 +217,16 @@ Current policy summaries use:
 For partial extra-mint rows, `not_issued_atto` applies only to the reviewed
 extra-mint portion. A separate field records the legitimate remainder.
 
-Historical treasury scenario files are retained locally under the numerical
+Historical destination-scenario files are retained locally under the numerical
 embargo only as calculation evidence:
 
 - `extra_mint_atto`;
 - `verified_burn_atto`;
 - `unreturned_extra_atto`;
-- `treasury_reclaim_atto`;
+- the legacy selected-destination amount;
 - `remaining_original_address_allocation_atto`;
 - decision and evidence notes.
 
-The historical treasury destination is superseded. Neither historical nor
-current policy fields change factual `total_claim_atto`; current non-issuance
-reduces only replacement-chain asset creation.
+The historical destination is superseded. Neither historical nor current
+policy fields change factual `total_claim_atto`; current non-issuance reduces
+claimant issuance and retains that amount in the Year 2025 Supply Reserve.

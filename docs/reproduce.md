@@ -397,8 +397,9 @@ and address overlap. It verifies:
 `gross cutoff claim = remaining full claim + not issued`.
 
 The result must state that the old-chain claim is unchanged, replacement-chain
-issuance is reduced, the treasury destination is null, and the amount is not
-available for another use.
+claimant issuance is reduced, and the amount remains in the **Year 2025 Supply
+Reserve** rather than being allocated to another purpose by this migration.
+See [`year-2025-supply-reserve.md`](year-2025-supply-reserve.md).
 
 ## 14. Public source verification
 

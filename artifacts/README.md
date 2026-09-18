@@ -9,6 +9,7 @@ configuration, or writable node data here.
 Numerical result summaries and the large-evidence release manifest remain local
 during the pre-publication embargo.
 
-Historical files containing treasury-routing fields are preserved as evidence
-only. Current reviewed incident amounts use terminal `not_issued` treatment:
-no replacement asset and no treasury destination.
+Historical files containing legacy destination-routing fields are preserved as
+evidence only. Current reviewed incident amounts use `not_issued` treatment:
+no claimant asset is created, and the amount remains in the Year 2025 Supply
+Reserve.

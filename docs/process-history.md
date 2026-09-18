@@ -88,8 +88,9 @@ Burn balances remained in every supply and claim total.
 - Extracted explicit perpetrator-controlled Harmony addresses from the
   supplied wallet-theft reports and compared them with the mint-response list.
 
-An early routing attempt assigned the entire supplied list to treasury. That
-was wrong and was discarded. The corrected scenario caps a direct
+An early routing attempt assigned the entire supplied list to a general
+destination account. That was wrong and was discarded. The corrected scenario
+caps a direct
 extra-mint-recipient reclaim by exact unreturned extra mint.
 
 This was the policy at that time. It was superseded by the later non-issuance
@@ -113,7 +114,7 @@ deferred until former DevOps staff or node backups provide the original files.
 
 ## September 15–16: non-issuance policy
 
-- Replaced treasury routing for reviewed incident amounts with terminal
+- Replaced the prior destination routing for reviewed incident amounts with
   `not_issued` treatment.
 - Kept the factual old-chain cutoff ledger unchanged.
 - Required no replacement token or staking-vault share to be created for
@@ -134,8 +135,8 @@ deferred until former DevOps staff or node backups provide the original files.
   and cutoff balance.
 - Verified that the positive retained addresses did not overlap the existing
   non-issuance inventory.
-- Added the capped retained amount to migration non-issuance without assigning
-  it to treasury.
+- Added the capped retained amount to migration non-issuance and retained it in
+  the Year 2025 Supply Reserve.
 - Kept exchange reserves, mixed downstream balances, and reported victims
   outside this amount.
 

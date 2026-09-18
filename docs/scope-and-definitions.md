@@ -24,8 +24,9 @@ This is a migration policy result:
 `gross cutoff claim - reviewed not-issued amounts`
 
 `not_issued` is terminal. No replacement token or staking-vault share is
-created, no treasury receives the amount, and it is not available for another
-use.
+created for the claimant. The amount remains in the **Year 2025 Supply
+Reserve** and is not allocated to another purpose by the current migration.
+See [`year-2025-supply-reserve.md`](year-2025-supply-reserve.md).
 
 For an extra-mint recipient, only the reviewed extra-mint portion is omitted.
 Any legitimate remainder stays eligible under the separate migration policy.
@@ -83,7 +84,7 @@ Therefore:
 - burn balances remain in the gross state sum;
 - burn balances are not deducted from bug-created amounts;
 - reviewed burn and inaccessible balances are not issued on the replacement
-  chain.
+  chain and remain in the Year 2025 Supply Reserve.
 
 This does not claim that the old-chain balances disappeared. It separates
 factual old-chain accounting from replacement-chain issuance.

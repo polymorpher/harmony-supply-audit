@@ -40,8 +40,10 @@ Not included:
 Those belong in the separate `harmony-migration` project. This audit records
 the current policy input: reviewed extra-mint, inaccessible, wallet-theft, and
 retained historical-hack amounts are not recreated on the replacement chain.
-They are not transferred to treasury and are not available for another use.
-Exact policy-scenario figures remain under the numerical embargo.
+Instead, they remain in the
+[Year 2025 Supply Reserve](docs/year-2025-supply-reserve.md) and are not
+allocated to a claimant or another purpose by the current migration. Exact
+policy-scenario figures remain under the numerical embargo.
 
 ## Quick start
 

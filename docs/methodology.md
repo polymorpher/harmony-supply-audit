@@ -84,10 +84,12 @@ The non-issuance audit:
 3. caps retained historical-hack value per initial recipient at
    `min(initial incident-contract distribution, cutoff balance)`;
 4. rejects duplicate addresses across inventories;
-5. emits no destination address for a not-issued amount.
+5. emits no claimant destination for a not-issued amount.
 
 No replacement token or staking-vault share is created for the omitted amount.
-It is not a treasury reserve.
+The amount remains in the **Year 2025 Supply Reserve** and is not allocated to
+another purpose by the current migration.
+See [`year-2025-supply-reserve.md`](year-2025-supply-reserve.md).
 
 ## 6. Rebuild the endpoint formula
 
