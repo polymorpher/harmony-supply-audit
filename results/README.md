@@ -7,9 +7,11 @@ embargo. They contain totals, component breakdowns, and address-level data.
   explicitly superseded destination calculations.
 - `2026-09-16/` contains the current migration non-issuance policy overlay and
   refreshed retained historical-hack evidence.
+- `2026-09-17/` independently verifies the current address-level migration
+  stage and reviewed-contract policy.
 
-In documentation, `not_issued` means retained in the **Year 2025 Supply
-Reserve**, not allocated to a claimant in the current migration.
+In documentation, `not_issued` means retained in the **2050 premint reserve**,
+not allocated to a claimant in the applicable migration stage.
 
 Public reviewers should follow `docs/reproduce.md` and record their own results
 before comparing them with the original audit.

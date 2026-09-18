@@ -146,11 +146,11 @@ ordinary circulating balances.
 ## Migration policy
 
 Reviewed incident amounts are now `not_issued` on the replacement chain. They
-are not allocated to claimants; instead, they remain in the **Year 2025 Supply
-Reserve**. The current migration does not allocate them to another purpose.
+are not allocated to claimants; instead, they remain in the **2050 premint
+reserve**. The current migration does not allocate them to another purpose.
 Historical destination-routing figures remain only as superseded calculation
 evidence.
-See [`year-2025-supply-reserve.md`](year-2025-supply-reserve.md).
+See [`2050-premint-reserve.md`](2050-premint-reserve.md).
 
 The retained May/April amount is capped by initial incident-contract
 distribution and cutoff balance. This proves balance-supported incident
@@ -158,13 +158,15 @@ provenance, not that every address is controlled by one person or every
 retained unit was newly created. Exchange reserves and mixed downstream
 balances are not added.
 
-This decision does not convert every custody or reserve route into
-non-issuance. Dedicated backing reserves such as WONE custody remain separate
-migration policies.
+This decision does not convert every reserve route into non-issuance. Qualified
+WONE holder backing remains a redistribution source offset; only its retained
+remainder joins the public “Abandoned contracts” aggregate. Approved reviewed
+contracts remain next-stage allocations rather than permanent non-issuance.
 
-This repository verifies the policy overlay but does not create the final
-migration allocation. Thresholds, contract handling, custody, and deployment
-remain in `harmony-migration`.
+This repository independently verifies the current stage-policy overlay but
+does not create a destination manifest. Destination evidence and deployment
+remain in `harmony-migration`. The reviewed contract partition does not cover
+the below-threshold code-bearing population, which remains deferred.
 
 ## Reproducible bytes
 

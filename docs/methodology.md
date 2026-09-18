@@ -87,9 +87,22 @@ The non-issuance audit:
 5. emits no claimant destination for a not-issued amount.
 
 No replacement token or staking-vault share is created for the omitted amount.
-The amount remains in the **Year 2025 Supply Reserve** and is not allocated to
+The amount remains in the **2050 premint reserve** and is not allocated to
 another purpose by the current migration.
-See [`year-2025-supply-reserve.md`](year-2025-supply-reserve.md).
+See [`2050-premint-reserve.md`](2050-premint-reserve.md).
+
+The integrated migration-stage check then reads the migration repository's
+address-level policy and independently verifies:
+
+- threshold membership was fixed before deductions;
+- migration stage and issuance treatment are separate fields;
+- the initial activity population contains wallets only;
+- validator wrappers remain wallet accounts;
+- the reviewed contract set partitions into next-stage and not-issued groups;
+- not-issued contract stake creates neither replacement vault assets nor
+  shares; and
+- initial, next-stage, and deferred amounts close to the total migration
+  allocation without changing gross native supply.
 
 ## 6. Rebuild the endpoint formula
 

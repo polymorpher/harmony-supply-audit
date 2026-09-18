@@ -10,6 +10,7 @@ Numerical result summaries and the large-evidence release manifest remain local
 during the pre-publication embargo.
 
 Historical files containing legacy destination-routing fields are preserved as
-evidence only. Current reviewed incident amounts use `not_issued` treatment:
-no claimant asset is created, and the amount remains in the Year 2025 Supply
-Reserve.
+evidence only. Reviewed incident amounts use `not_issued` treatment: no
+claimant asset is created, and the amount remains in the 2050 premint reserve.
+That September 16 result is one component of the composite September 17
+migration policy, not the complete exclusion total.

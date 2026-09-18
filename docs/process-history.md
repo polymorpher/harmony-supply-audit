@@ -136,9 +136,28 @@ deferred until former DevOps staff or node backups provide the original files.
 - Verified that the positive retained addresses did not overlap the existing
   non-issuance inventory.
 - Added the capped retained amount to migration non-issuance and retained it in
-  the Year 2025 Supply Reserve.
+  the 2050 premint reserve.
 - Kept exchange reserves, mixed downstream balances, and reported victims
   outside this amount.
+
+## September 17: staged wallet and reviewed-contract policy
+
+- Kept the inclusive 1,000 ONE snapshot threshold and evaluated it before
+  deductions.
+- Limited the initial stage to positive eligible wallets with six-month
+  indexed activity.
+- Reserved reviewed multisig, LayerZero collateral, and 1wallet allocations
+  for the next stage regardless of activity.
+- Assigned 1wallet to recovery-multisig handling without selecting an
+  unverified destination.
+- Marked SmartVault and all other reviewed genuine-contract allocations not
+  issued, including staked-vault components.
+- Independently verified the migration repository's address-level stage file
+  and exact conservation equations.
+- Kept migration stage separate from `not_issued`/`redistributed` treatment and
+  verified the initial-only materialized wallet and validator-vault plans.
+- Replaced the misleading “Year 2025 Supply Reserve” label with “2050 premint
+  reserve”; the underlying fixed premint did not change.
 
 ## Public package extraction
 

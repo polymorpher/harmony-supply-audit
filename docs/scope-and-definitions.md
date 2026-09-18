@@ -17,19 +17,27 @@ This is the sum recognized by chain state:
 
 The cutoff total is withheld during the independent-review period.
 
-### Replacement-chain issued amount
+### Total migration allocation
 
 This is a migration policy result:
 
 `gross cutoff claim - reviewed not-issued amounts`
 
-`not_issued` is terminal. No replacement token or staking-vault share is
-created for the claimant. The amount remains in the **Year 2025 Supply
-Reserve** and is not allocated to another purpose by the current migration.
-See [`year-2025-supply-reserve.md`](year-2025-supply-reserve.md).
+This is not the amount released in the initial stage. `not_issued` is a
+separate issuance treatment: no replacement token or staking-vault share is
+created for that amount. It remains in the **2050 premint reserve** and is not
+allocated to another purpose by the current migration.
+See [`2050-premint-reserve.md`](2050-premint-reserve.md).
 
 For an extra-mint recipient, only the reviewed extra-mint portion is omitted.
 Any legitimate remainder stays eligible under the separate migration policy.
+
+Snapshot threshold membership, migration stage, and destination readiness are
+separate. The initial stage contains positive eligible wallets with indexed
+activity in the six calendar months before cutoff. Reviewed multisig,
+LayerZero collateral, and 1wallet allocations are held for the next stage;
+SmartVault and other reviewed genuine-contract allocations are not issued.
+The activity metric is not an abandonment test.
 
 ### State-resident formula gap
 
@@ -84,7 +92,7 @@ Therefore:
 - burn balances remain in the gross state sum;
 - burn balances are not deducted from bug-created amounts;
 - reviewed burn and inaccessible balances are not issued on the replacement
-  chain and remain in the Year 2025 Supply Reserve.
+  chain and remain in the 2050 premint reserve.
 
 This does not claim that the old-chain balances disappeared. It separates
 factual old-chain accounting from replacement-chain issuance.

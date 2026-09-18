@@ -397,9 +397,30 @@ and address overlap. It verifies:
 `gross cutoff claim = remaining full claim + not issued`.
 
 The result must state that the old-chain claim is unchanged, replacement-chain
-claimant issuance is reduced, and the amount remains in the **Year 2025 Supply
-Reserve** rather than being allocated to another purpose by this migration.
-See [`year-2025-supply-reserve.md`](year-2025-supply-reserve.md).
+claimant issuance is reduced, and the amount remains in the **2050 premint
+reserve** rather than being allocated to another purpose by this migration.
+See [`2050-premint-reserve.md`](2050-premint-reserve.md).
+
+### Verify the integrated migration-stage policy
+
+After `harmony-migration` generates its address-level stage policy, independently
+re-sum it against this audit's non-issuance result:
+
+```sh
+python3 toolkit/scripts/verify/migration-policy-reconciliation.py \
+  --stage-policy ../harmony-migration/artifacts/migration-policy-20260917/migration-stage-policy.csv \
+  --stage-summary ../harmony-migration/artifacts/migration-policy-20260917/migration-stage-summary.json \
+  --migration-summary ../harmony-migration/artifacts/cutoff-20260910/claims/all-address-migration-claims-cutoff-summary.json \
+  --existing-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/non-issuance-inventory.csv \
+  --historical-retention artifacts/historical-hacks-investigation-20260916/not-issued-retained-initial-addresses.csv \
+  --supply-non-issuance-summary results/2026-09-16/migration-non-issuance-summary.json \
+  --output results/2026-09-17/migration-policy-reconciliation.json \
+  --report docs/findings/migration-policy-reconciliation.md
+```
+
+This verifies the wallet-only initial stage, reviewed 196/525 contract
+partition, WONE source offset, validator-wrapper exception, and all exact
+conservation equations without using an article calculation as authority.
 
 ## 14. Public source verification
 

@@ -205,12 +205,13 @@ Current policy summaries use:
 
 - `not_issued_atto`: amount for which no replacement asset is created.
 - `migration_treatment`: `not_issued`.
-- routing destination: none; the amount remains in the **Year 2025 Supply
-  Reserve**.
+- routing destination: none; the amount remains in the **2050 premint
+  reserve**.
 - `available_for_other_use`: false means the current migration does not
   allocate the amount to another purpose.
 - `remaining_full_claim_after_non_issuance_atto`: gross factual claim minus
-  current non-issuance.
+  the September 16 incident/retained-fund component; it is not the complete
+  staged migration allocation.
 - `retained_cap_atto`: lesser of an initial incident-contract distribution and
   the cutoff balance at that address.
 
@@ -229,4 +230,22 @@ embargo only as calculation evidence:
 
 The historical destination is superseded. Neither historical nor current
 policy fields change factual `total_claim_atto`; current non-issuance reduces
-claimant issuance and retains that amount in the Year 2025 Supply Reserve.
+the migration allocation and retains that amount in the 2050 premint reserve.
+
+## Integrated migration-stage verification
+
+`results/2026-09-17/migration-policy-reconciliation.json` independently
+re-sums:
+
+- `stages`: disjoint address counts and migration allocation by `initial`,
+  `next_stage`, and `deferred`;
+- `issuance_treatments`: separate `issue` and `not_issued` row counts;
+- `contracts`: the reviewed internal identity groups with migration and
+  non-issuance amounts kept separate;
+- `allocation`: gross native snapshot, existing and historical deductions,
+  retained WONE backing, reviewed-contract non-issuance, initial wallets,
+  next-stage contracts, deferred wallets, and total migration allocation.
+
+The public `abandoned_contracts_public_aggregate_atto` is an aggregate label,
+not an address classification. The machine-readable inputs preserve the two
+components and the actual policy reasons.

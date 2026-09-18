@@ -38,12 +38,15 @@ Not included:
 - final migration allocation generation.
 
 Those belong in the separate `harmony-migration` project. This audit records
-the current policy input: reviewed extra-mint, inaccessible, wallet-theft, and
-retained historical-hack amounts are not recreated on the replacement chain.
-Instead, they remain in the
-[Year 2025 Supply Reserve](docs/year-2025-supply-reserve.md) and are not
+one current policy component: reviewed extra-mint, inaccessible, wallet-theft,
+and retained historical-hack amounts are not recreated on the replacement
+chain. Instead, they remain in the
+[2050 premint reserve](docs/2050-premint-reserve.md) and are not
 allocated to a claimant or another purpose by the current migration. Exact
-policy-scenario figures remain under the numerical embargo.
+policy-scenario figures remain under the numerical embargo. The complete
+staged allocation, including WONE and reviewed-contract treatment, is
+independently checked in
+`docs/findings/migration-policy-reconciliation.md`.
 
 ## Quick start
 

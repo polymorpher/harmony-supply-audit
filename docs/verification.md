@@ -26,8 +26,20 @@ the current non-issuance summary, every retained-address row, and its large
 release-asset manifest. It does not merely check that fields inside one
 reconciliation JSON add up.
 
+After the sibling migration repository generates its stage ledger, run:
+
+```sh
+make migration-policy
+```
+
+This independently re-sums the wallet-only initial stage, reviewed-contract
+partition, WONE offset, wallet/vault components, separate issuance treatment,
+and cross-repository non-issuance inputs. The migration repository separately
+materializes and verifies initial-only wallet, share, and validator-vault
+plans.
+
 In these checks, `not_issued` means retained in the
-[Year 2025 Supply Reserve](year-2025-supply-reserve.md), not allocated to a
+[2050 premint reserve](2050-premint-reserve.md), not allocated to a
 claimant in the current migration.
 
 ## Source verification
@@ -69,7 +81,9 @@ A full verifier should:
     inventory and retained historical-incident balances;
 15. verify that no not-issued amount has a destination or creates a replacement
     asset, and that gross claim equals remaining claim plus not issued;
-16. save the deterministic fields and CSV hashes before receiving the original
+16. independently verify that migration stages are disjoint, contracts do not
+    enter wallet activity rows, and initial + next-stage + deferred closes;
+17. save the deterministic fields and CSV hashes before receiving the original
    audit results.
 
 The original result manifest will be published after the independent-review
