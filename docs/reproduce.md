@@ -375,20 +375,27 @@ templates.
 This step is separate from the factual claim ledger. Obtain:
 
 - the reviewed current non-issuance inventory from `harmony-migration`;
-- the retained initial-recipient balance CSV and summary from the September 16
-  historical-hacks evidence package;
+- the retained initial-recipient balance CSV, its summary, and the raw
+  balance-response evidence it cites. This repository keeps its own pinned
+  copies under `artifacts/historical-retention-snapshot-20260916/current-state/`
+  (balances SHA-256 `0e07628a…3369e7`, summary `b5d6b023…2b632e`), taken on
+  2026-09-22 from the September 16 historical-hacks evidence package. That
+  package is an external agent's workspace: do not read from or write into it
+  during a rebuild; refresh the snapshot only from a package the external
+  agent hands over;
 - the factual cutoff claim summary.
 
-Then run:
+Then run (the output CSV must reproduce SHA-256 `7a5a7364…43376e`):
 
 ```sh
 python3 toolkit/scripts/addresses/build-non-issuance-audit.py \
-  --existing-non-issuance /path/to/non-issuance-inventory.csv \
-  --retained-balances /path/to/initial-address-current-balances.csv \
-  --retained-summary /path/to/current-state-summary.json \
-  --cutoff-claim-summary "$OUT/supply/actual-supply-ledger-summary.json" \
-  --output-csv "$OUT/policy/not-issued-retained-initial-addresses.csv" \
-  --summary-output "$OUT/policy/migration-non-issuance-summary.json"
+  --existing-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/non-issuance-inventory.csv \
+  --retained-balances artifacts/historical-retention-snapshot-20260916/current-state/initial-address-current-balances.csv \
+  --retained-summary artifacts/historical-retention-snapshot-20260916/current-state/summary.json \
+  --cutoff-claim-summary artifacts/cutoff-20260910/claims/actual-supply-ledger-cutoff-summary.json \
+  --output-csv artifacts/historical-retention-snapshot-20260916/not-issued-retained-initial-addresses.csv \
+  --summary-output results/2026-09-16/migration-non-issuance-summary.json \
+  --replace
 ```
 
 The script checks every retained cap, source evidence path, category subtotal,
@@ -412,7 +419,7 @@ python3 toolkit/scripts/verify/migration-policy-reconciliation.py \
   --stage-summary ../harmony-migration/artifacts/migration-policy-20260917/migration-stage-summary.json \
   --migration-summary ../harmony-migration/artifacts/cutoff-20260910/claims/all-address-migration-claims-cutoff-summary.json \
   --existing-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/non-issuance-inventory.csv \
-  --historical-retention artifacts/historical-hacks-investigation-20260916/not-issued-retained-initial-addresses.csv \
+  --historical-retention artifacts/historical-retention-snapshot-20260916/not-issued-retained-initial-addresses.csv \
   --supply-non-issuance-summary results/2026-09-16/migration-non-issuance-summary.json \
   --output results/2026-09-17/migration-policy-reconciliation.json \
   --report docs/findings/migration-policy-reconciliation.md
