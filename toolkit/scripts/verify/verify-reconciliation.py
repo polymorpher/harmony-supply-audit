@@ -327,7 +327,7 @@ def main():
     retained_csv = (
         REPOSITORY_ROOT
         / "artifacts"
-        / "historical-hacks-investigation-20260916"
+        / "historical-retention-snapshot-20260916"
         / non_issuance["outputs"]["retained_not_issued_csv"]
     )
     if sha256(retained_csv) != non_issuance["outputs"][

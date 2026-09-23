@@ -37,7 +37,7 @@ migration-policy:
 		--stage-summary "$(MIGRATION_REPO)/artifacts/migration-policy-20260917/migration-stage-summary.json" \
 		--migration-summary "$(MIGRATION_REPO)/artifacts/cutoff-20260910/claims/all-address-migration-claims-cutoff-summary.json" \
 		--existing-non-issuance "$(MIGRATION_REPO)/artifacts/supply-reconciliation-20260911/non-issuance-inventory.csv" \
-		--historical-retention artifacts/historical-hacks-investigation-20260916/not-issued-retained-initial-addresses.csv \
+		--historical-retention artifacts/historical-retention-snapshot-20260916/not-issued-retained-initial-addresses.csv \
 		--supply-non-issuance-summary results/2026-09-16/migration-non-issuance-summary.json \
 		--output results/2026-09-17/migration-policy-reconciliation.json \
 		--report docs/findings/migration-policy-reconciliation.md \
