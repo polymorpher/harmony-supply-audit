@@ -110,7 +110,11 @@ policy from shared source artifacts rather than an editorial calculation.
 The initial cohort contains only positive eligible wallets with indexed
 activity in the six calendar months before cutoff. Reviewed contracts are not
 present in its activity rows. Exchange/manual routing rows remain allocations;
-their routing category does not mean non-issuance.
+their routing category does not mean non-issuance. In the migration
+repository's compiled routing, confirmed exchange wallets leave this cohort for
+the `exchange_manual` stage: they are excluded from the airdrop and delivered
+manually from the 2050 supply reserve, so the stage-policy count below is an
+upper bound on the airdropped initial cohort.
 It contains `{result["initial_wallets"]["automatic_policy_addresses"]:,}`
 automatic-policy rows and
 `{result["initial_wallets"]["manual_routing_addresses"]:,}` exchange/manual
