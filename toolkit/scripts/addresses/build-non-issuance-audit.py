@@ -27,10 +27,20 @@ def parse_args():
             "at initial recipients of historical unbacked credits"
         )
     )
-    parser.add_argument("--existing-non-issuance", required=True)
+    parser.add_argument(
+        "--existing-non-issuance",
+        action="append",
+        required=True,
+        help="reviewed non-issuance inventory; repeatable, an address may appear in only one",
+    )
     parser.add_argument("--retained-balances", required=True)
     parser.add_argument("--retained-summary", required=True)
     parser.add_argument("--cutoff-claim-summary", required=True)
+    parser.add_argument(
+        "--rollback-leak-retention",
+        help="build-rollback-leak-retention.py export: wallets credited by proven rollback-leak receipts",
+    )
+    parser.add_argument("--rollback-leak-summary", help="summary written with --rollback-leak-retention")
     parser.add_argument("--output-csv", required=True)
     parser.add_argument("--summary-output", required=True)
     parser.add_argument("--replace", action="store_true")
@@ -190,6 +200,40 @@ def load_retained(path, output_directory):
     return rows, seen, by_incident, next(iter(blocks))
 
 
+def load_rollback_leak(path, summary_path, retained_caps, existing_amounts):
+    """Re-check every withheld amount: min(credit, native claim - earlier non-issuance)."""
+    summary = json.loads(summary_path.read_text())
+    if summary.get("status") != "passed":
+        raise ValueError(f"{summary_path}: did not pass")
+    if summary["outputs"]["csv_sha256"] != sha256(path):
+        raise ValueError(f"{path}: SHA-256 differs from {summary_path}")
+    by_incident = defaultdict(lambda: {"positive_addresses": 0, "unbacked_credit_atto": 0, "not_issued_atto": 0})
+    seen = set()
+    overlap_retained = []
+    for line, row in enumerate(csv.DictReader(path.open(newline="")), start=2):
+        address = row["address_hex"].lower()
+        if address in seen:
+            raise ValueError(f"{path}:{line}: duplicate address {address}")
+        seen.add(address)
+        prior = retained_caps.get(address, 0) + existing_amounts.get(address, 0)
+        if int(row["prior_non_issuance_atto"]) != prior:
+            raise ValueError(f"{path}:{line}: earlier non-issuance does not match the inventories")
+        withheld = int(row["retained_cap_atto"])
+        expected = min(int(row["unbacked_credit_atto"]), max(int(row["cutoff_native_claim_atto"]) - prior, 0))
+        if withheld != expected or withheld <= 0 or row["migration_treatment"] != "not_issued":
+            raise ValueError(f"{path}:{line}: withheld amount does not follow the rule")
+        if address in retained_caps:
+            overlap_retained.append(address)
+        values = by_incident[row["incident"]]
+        values["positive_addresses"] += 1
+        values["unbacked_credit_atto"] += int(row["unbacked_credit_atto"])
+        values["not_issued_atto"] += withheld
+    total = sum(values["not_issued_atto"] for values in by_incident.values())
+    if str(total) != summary["not_issued_atto"] or len(seen) != summary["positive_rows"]:
+        raise ValueError(f"{path}: totals differ from {summary_path}")
+    return seen, by_incident, total, sorted(overlap_retained), summary
+
+
 def write_csv(path, rows, replace):
     fields = (
         "address_bech32",
@@ -230,16 +274,26 @@ def write_json(path, value, replace):
 
 def main():
     args = parse_args()
-    existing_path = Path(args.existing_non_issuance)
+    existing_paths = [Path(path) for path in args.existing_non_issuance]
     retained_path = Path(args.retained_balances)
     retained_summary_path = Path(args.retained_summary)
     claim_summary_path = Path(args.cutoff_claim_summary)
     output_path = Path(args.output_csv)
     summary_path = Path(args.summary_output)
 
-    existing_rows, existing_addresses, existing_categories = load_existing(
-        existing_path
-    )
+    existing_rows = []
+    existing_addresses = set()
+    existing_categories = defaultdict(lambda: {"rows": 0, "positive_rows": 0, "atto": 0})
+    for existing_path in existing_paths:
+        rows, addresses, categories = load_existing(existing_path)
+        overlap = existing_addresses & addresses
+        if overlap:
+            raise ValueError(f"{existing_path}: addresses already in another inventory: {sorted(overlap)}")
+        existing_rows.extend(rows)
+        existing_addresses |= addresses
+        for category, values in categories.items():
+            for key, value in values.items():
+                existing_categories[category][key] += value
     retained_rows, _, retained_by_incident, verification_block = load_retained(
         retained_path, output_path.parent
     )
@@ -276,7 +330,51 @@ def main():
         values["retained_cap_atto"]
         for values in retained_by_incident.values()
     )
-    combined = existing_total + retained_total
+    leak_section = None
+    leak_total = 0
+    leak_sources = {}
+    if args.rollback_leak_retention:
+        if not args.rollback_leak_summary:
+            raise ValueError("--rollback-leak-retention needs --rollback-leak-summary")
+        leak_path = Path(args.rollback_leak_retention)
+        leak_summary_path = Path(args.rollback_leak_summary)
+        leak_addresses, leak_by_incident, leak_total, leak_overlap, leak_summary = load_rollback_leak(
+            leak_path,
+            leak_summary_path,
+            {row["address_hex"]: int(row["retained_cap_atto"]) for row in retained_rows},
+            {row["address_hex"].lower(): int(row["not_issued_atto"]) for row in existing_rows},
+        )
+        leak_section = {
+            "rule": leak_summary["rule"],
+            "leak_receipts": leak_summary["leak_receipts"],
+            "credited_recipients": leak_summary["credited_recipients"],
+            "unbacked_credit_atto": leak_summary["unbacked_credit_atto"],
+            "unbacked_credit_one": leak_summary["unbacked_credit_one"],
+            "positive_addresses": len(leak_addresses),
+            "by_incident": {
+                incident: {
+                    "positive_addresses": values["positive_addresses"],
+                    "unbacked_credit_atto": str(values["unbacked_credit_atto"]),
+                    "unbacked_credit_one": one(values["unbacked_credit_atto"]),
+                    "not_issued_atto": str(values["not_issued_atto"]),
+                    "not_issued_one": one(values["not_issued_atto"]),
+                }
+                for incident, values in sorted(leak_by_incident.items())
+            },
+            "not_issued_atto": str(leak_total),
+            "not_issued_one": one(leak_total),
+            "addresses_also_in_retained_initial_addresses": leak_overlap,
+            "overlap_note": (
+                "an address in both lists loses its retained cap first and then "
+                "the rollback-leak amount from what remains"
+            ),
+        }
+        leak_sources = {
+            "rollback_leak_retention": {"name": portable_source_name(leak_path), "sha256": sha256(leak_path)},
+            "rollback_leak_summary": {"name": portable_source_name(leak_summary_path),
+                                      "sha256": sha256(leak_summary_path)},
+        }
+    combined = existing_total + retained_total + leak_total
     if combined > gross_claim:
         raise ValueError("combined non-issuance exceeds the gross cutoff claim")
 
@@ -359,6 +457,7 @@ def main():
             "not_issued_one": one(retained_total),
             "overlap_with_existing_non_issuance_addresses": 0,
         },
+        **({"rollback_leak_credited_recipients": leak_section} if leak_section else {}),
         "totals": {
             "gross_cutoff_claim_atto": str(gross_claim),
             "gross_cutoff_claim_one": one(gross_claim),
@@ -396,10 +495,10 @@ def main():
             "retained_not_issued_rows": len(retained_rows),
         },
         "sources": {
-            "existing_non_issuance": {
-                "name": portable_source_name(existing_path),
-                "sha256": sha256(existing_path),
-            },
+            "existing_non_issuance": [
+                {"name": portable_source_name(path), "sha256": sha256(path)}
+                for path in existing_paths
+            ],
             "retained_balances": {
                 "name": portable_source_name(retained_path),
                 "sha256": sha256(retained_path),
@@ -412,8 +511,11 @@ def main():
                 "name": portable_source_name(claim_summary_path),
                 "sha256": sha256(claim_summary_path),
             },
+            **leak_sources,
         },
     }
+    if leak_section:
+        summary["policy"]["rollback_leak_credit_rule"] = leak_section["rule"]
     write_json(summary_path, summary, args.replace)
     print(
         json.dumps(
@@ -421,6 +523,7 @@ def main():
                 "status": "passed",
                 "retained_rows": len(retained_rows),
                 "retained_not_issued_atto": str(retained_total),
+                "rollback_leak_not_issued_atto": str(leak_total),
                 "combined_not_issued_atto": str(combined),
             },
             sort_keys=True,
