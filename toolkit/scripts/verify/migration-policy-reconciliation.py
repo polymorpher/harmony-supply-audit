@@ -19,8 +19,18 @@ def parse_args():
     parser.add_argument("--stage-policy", required=True)
     parser.add_argument("--stage-summary", required=True)
     parser.add_argument("--migration-summary", required=True)
-    parser.add_argument("--existing-non-issuance", required=True)
-    parser.add_argument("--historical-retention", required=True)
+    parser.add_argument(
+        "--existing-non-issuance",
+        action="append",
+        required=True,
+        help="reviewed non-issuance inventory used by the stage policy; repeatable, in the same order",
+    )
+    parser.add_argument(
+        "--historical-retention",
+        action="append",
+        required=True,
+        help="retained-cap export used by the stage policy; repeatable, in the same order",
+    )
     parser.add_argument("--supply-non-issuance-summary", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--report", required=True)
@@ -153,6 +163,8 @@ It is not an on-chain abandonment finding.
 gross native snapshot                      {one(allocation["gross_native_snapshot_atto"])}
 - existing non-issuance                    {one(allocation["existing_non_issuance_atto"])}
 - historical retained caps                 {one(allocation["historical_retained_caps_atto"])}
+    incident-contract recipients           {one(allocation["historical_incident_contract_recipients_atto"])}
+    rollback-leak credited wallets         {one(allocation["rollback_leak_credited_recipients_atto"])}
 - retained WONE backing                     {one(allocation["wone_retained_not_issued_atto"])}
 - reviewed-contract non-issuance            {one(allocation["reviewed_contract_non_issuance_atto"])}
 = total migration allocation               {one(allocation["total_migration_atto"])}
@@ -186,24 +198,22 @@ def main():
         "stage_policy": args.stage_policy,
         "stage_summary": args.stage_summary,
         "migration_summary": args.migration_summary,
-        "existing_non_issuance": args.existing_non_issuance,
-        "historical_retention": args.historical_retention,
         "supply_non_issuance_summary": args.supply_non_issuance_summary,
     }
+    for name in ("existing_non_issuance", "historical_retention"):
+        for index, path in enumerate(getattr(args, name)):
+            sources[f"{name}_{index + 1}"] = path
     hashes = {name: file_sha256(path) for name, path in sources.items()}
     if hashes["stage_policy"] != stage_summary["output_sha256"]:
         raise ValueError("stage-policy hash mismatch")
-    source_names = {
-        "migration_summary": "migration_summary",
-        "existing_non_issuance": "existing_non_issuance",
-        "historical_retention": "historical_retention",
-    }
-    for local_name, summary_name in source_names.items():
-        if (
-            hashes[local_name]
-            != stage_summary["sources"][summary_name]["sha256"]
-        ):
-            raise ValueError(f"{local_name} hash mismatch")
+    if hashes["migration_summary"] != stage_summary["sources"]["migration_summary"]["sha256"]:
+        raise ValueError("migration_summary hash mismatch")
+    for name in ("existing_non_issuance", "historical_retention"):
+        recorded = stage_summary["sources"][name]
+        recorded = recorded if isinstance(recorded, list) else [recorded]
+        local = [hashes[f"{name}_{index + 1}"] for index in range(len(getattr(args, name)))]
+        if local != [record["sha256"] for record in recorded]:
+            raise ValueError(f"{name} hash mismatch")
 
     seen = set()
     stages = defaultdict(lambda: {"addresses": 0, "allocation_atto": 0})
@@ -412,11 +422,17 @@ def main():
         supply_non_issuance["existing_non_issuance"]["not_issued_atto"]
     ):
         raise ValueError("existing non-issuance total mismatch")
-    if historical_total != int(
-        supply_non_issuance[
-            "historical_hack_retained_initial_addresses"
-        ]["not_issued_atto"]
-    ):
+    supply_retained = int(
+        supply_non_issuance["historical_hack_retained_initial_addresses"][
+            "not_issued_atto"
+        ]
+    )
+    supply_rollback_leak = int(
+        supply_non_issuance.get("rollback_leak_credited_recipients", {}).get(
+            "not_issued_atto", 0
+        )
+    )
+    if historical_total != supply_retained + supply_rollback_leak:
         raise ValueError("historical retained-cap total mismatch")
     if existing_total + historical_total != int(
         supply_non_issuance["totals"]["not_issued_atto"]
@@ -519,6 +535,8 @@ def main():
             "gross_native_snapshot_atto": gross,
             "existing_non_issuance_atto": existing_total,
             "historical_retained_caps_atto": historical_total,
+            "historical_incident_contract_recipients_atto": supply_retained,
+            "rollback_leak_credited_recipients_atto": supply_rollback_leak,
             "wone_retained_not_issued_atto": retained_wone,
             "reviewed_contract_non_issuance_atto": contract_non_issuance,
             "abandoned_contracts_public_aggregate_atto": (
