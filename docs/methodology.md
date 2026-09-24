@@ -274,8 +274,15 @@ Address-list audits:
 - verify retained historical-incident balances against fixed-block RPC and
   cutoff state.
 
+`build-rollback-leak-retention.py` lists every wallet credited by a proven
+rollback-leak receipt and withholds the credited amount, capped at the wallet's
+native cutoff claim after earlier non-issuance, so wallets holding only exploit
+credit lose their whole claim while legitimate remainders stay eligible.
+
 `build-non-issuance-audit.py` combines the reviewed existing inventory with
-the retained historical-incident cap, verifies no overlap, and proves:
+the retained historical-incident cap and the rollback-leak list, verifies each
+list's rule and overlaps (a wallet in both incident lists loses its retained
+cap first), and proves:
 
 `gross cutoff claim = remaining full claim + not issued`.
 

@@ -388,15 +388,40 @@ This step is separate from the factual claim ledger. Obtain:
 Then run (the output CSV must reproduce SHA-256 `7a5a7364…43376e`):
 
 ```sh
+python3 toolkit/scripts/addresses/build-rollback-leak-retention.py \
+  --receipt-audit artifacts/historical/cx-source-audit-through-prebloom.csv \
+  --receipt-audit artifacts/historical/cx-source-audit-shard0-exploit.csv \
+  --receipt-audit artifacts/historical/cx-source-audit-shard0-posthip30.csv \
+  --receipt-audit artifacts/historical/cx-source-audit-shard0-prehip30-precompile.csv \
+  --receipt-audit artifacts/historical/cx-source-audit-shard1-prehip30-late.csv \
+  --exploit-transactions artifacts/historical/historical-exploit-traced-transactions.csv \
+  --claims ../harmony-migration/artifacts/cutoff-20260910/claims/all-address-migration-claims-cutoff-metadata.csv \
+  --prior-retention artifacts/historical-retention-snapshot-20260916/not-issued-retained-initial-addresses.csv \
+  --prior-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/non-issuance-inventory.csv \
+  --prior-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/inaccessible-address-inventory-20260923.csv \
+  --output-csv artifacts/rollback-leak-retention-20260923/not-issued-rollback-leak-recipients.csv \
+  --summary-output artifacts/rollback-leak-retention-20260923/summary.json
+
 python3 toolkit/scripts/addresses/build-non-issuance-audit.py \
   --existing-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/non-issuance-inventory.csv \
+  --existing-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/inaccessible-address-inventory-20260923.csv \
   --retained-balances artifacts/historical-retention-snapshot-20260916/current-state/initial-address-current-balances.csv \
   --retained-summary artifacts/historical-retention-snapshot-20260916/current-state/summary.json \
   --cutoff-claim-summary artifacts/cutoff-20260910/claims/actual-supply-ledger-cutoff-summary.json \
+  --rollback-leak-retention artifacts/rollback-leak-retention-20260923/not-issued-rollback-leak-recipients.csv \
+  --rollback-leak-summary artifacts/rollback-leak-retention-20260923/summary.json \
   --output-csv artifacts/historical-retention-snapshot-20260916/not-issued-retained-initial-addresses.csv \
   --summary-output results/2026-09-16/migration-non-issuance-summary.json \
   --replace
 ```
+
+The first command withholds exploit credit from the wallets it was credited
+to: for every destination of a proven rollback-leak receipt (classification
+`rollback_leak` or `source_debit_absent`) it records
+`min(credited amount, native cutoff claim - earlier non-issuance)`. A wallet
+holding only exploit credit loses its whole claim; legitimate remainders stay
+eligible. The second command adds that list to the non-issuance summary as a
+separate section and includes it in the totals; its own CSV output is unchanged.
 
 The script checks every retained cap, source evidence path, category subtotal,
 and address overlap. It verifies:
@@ -419,7 +444,9 @@ python3 toolkit/scripts/verify/migration-policy-reconciliation.py \
   --stage-summary ../harmony-migration/artifacts/migration-policy-20260917/migration-stage-summary.json \
   --migration-summary ../harmony-migration/artifacts/cutoff-20260910/claims/all-address-migration-claims-cutoff-summary.json \
   --existing-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/non-issuance-inventory.csv \
+  --existing-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/inaccessible-address-inventory-20260923.csv \
   --historical-retention artifacts/historical-retention-snapshot-20260916/not-issued-retained-initial-addresses.csv \
+  --historical-retention artifacts/rollback-leak-retention-20260923/not-issued-rollback-leak-recipients.csv \
   --supply-non-issuance-summary results/2026-09-16/migration-non-issuance-summary.json \
   --output results/2026-09-17/migration-policy-reconciliation.json \
   --report docs/findings/migration-policy-reconciliation.md
