@@ -236,14 +236,14 @@ python3 toolkit/scripts/forensics/cx-source-audit.py \
 ```
 
 `cx-source-audit.py` requires transaction traces. A receipt is classified as
-rollback leakage only when its source debit occurred inside a failed or
+revert leakage only when its source debit occurred inside a failed or
 reverted execution frame.
 
 A failed precompile invocation alone is not such evidence. For traced source
 transactions, exactly one precompile call must complete locally and its ABI
 amount, recipient, destination shard, and effective sender context must match
 the canonical receipt. The stored receipt and replay root must both succeed. A
-failed non-root ancestor then distinguishes rollback leakage from a valid
+failed non-root ancestor then distinguishes revert leakage from a valid
 debit. Traces with zero or multiple completed calls or a receipt-identity
 mismatch remain unclassified. A replay root inconsistent with the stored
 receipt is labeled `replay_incompatible`.
@@ -388,7 +388,7 @@ This step is separate from the factual claim ledger. Obtain:
 Then run (the output CSV must reproduce SHA-256 `7a5a7364…43376e`):
 
 ```sh
-python3 toolkit/scripts/addresses/build-rollback-leak-retention.py \
+python3 toolkit/scripts/addresses/build-revert-leak-retention.py \
   --receipt-audit artifacts/historical/cx-source-audit-through-prebloom.csv \
   --receipt-audit artifacts/historical/cx-source-audit-shard0-exploit.csv \
   --receipt-audit artifacts/historical/cx-source-audit-shard0-posthip30.csv \
@@ -399,8 +399,8 @@ python3 toolkit/scripts/addresses/build-rollback-leak-retention.py \
   --prior-retention artifacts/historical-retention-snapshot-20260916/not-issued-retained-initial-addresses.csv \
   --prior-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/non-issuance-inventory.csv \
   --prior-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/inaccessible-address-inventory-20260923.csv \
-  --output-csv artifacts/rollback-leak-retention-20260923/not-issued-rollback-leak-recipients.csv \
-  --summary-output artifacts/rollback-leak-retention-20260923/summary.json
+  --output-csv artifacts/revert-leak-retention-20260923/not-issued-revert-leak-recipients.csv \
+  --summary-output artifacts/revert-leak-retention-20260923/summary.json
 
 python3 toolkit/scripts/addresses/build-non-issuance-audit.py \
   --existing-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/non-issuance-inventory.csv \
@@ -408,15 +408,15 @@ python3 toolkit/scripts/addresses/build-non-issuance-audit.py \
   --retained-balances artifacts/historical-retention-snapshot-20260916/current-state/initial-address-current-balances.csv \
   --retained-summary artifacts/historical-retention-snapshot-20260916/current-state/summary.json \
   --cutoff-claim-summary artifacts/cutoff-20260910/claims/actual-supply-ledger-cutoff-summary.json \
-  --rollback-leak-retention artifacts/rollback-leak-retention-20260923/not-issued-rollback-leak-recipients.csv \
-  --rollback-leak-summary artifacts/rollback-leak-retention-20260923/summary.json \
+  --revert-leak-retention artifacts/revert-leak-retention-20260923/not-issued-revert-leak-recipients.csv \
+  --revert-leak-summary artifacts/revert-leak-retention-20260923/summary.json \
   --output-csv artifacts/historical-retention-snapshot-20260916/not-issued-retained-initial-addresses.csv \
   --summary-output results/2026-09-16/migration-non-issuance-summary.json \
   --replace
 ```
 
 The first command withholds exploit credit from the wallets it was credited
-to: for every destination of a proven rollback-leak receipt (classification
+to: for every destination of a proven revert-leak receipt (classification
 `rollback_leak` or `source_debit_absent`) it records
 `min(credited amount, native cutoff claim - earlier non-issuance)`. A wallet
 holding only exploit credit loses its whole claim; legitimate remainders stay
@@ -446,7 +446,7 @@ python3 toolkit/scripts/verify/migration-policy-reconciliation.py \
   --existing-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/non-issuance-inventory.csv \
   --existing-non-issuance ../harmony-migration/artifacts/supply-reconciliation-20260911/inaccessible-address-inventory-20260923.csv \
   --historical-retention artifacts/historical-retention-snapshot-20260916/not-issued-retained-initial-addresses.csv \
-  --historical-retention artifacts/rollback-leak-retention-20260923/not-issued-rollback-leak-recipients.csv \
+  --historical-retention artifacts/revert-leak-retention-20260923/not-issued-revert-leak-recipients.csv \
   --supply-non-issuance-summary results/2026-09-16/migration-non-issuance-summary.json \
   --output results/2026-09-17/migration-policy-reconciliation.json \
   --report docs/findings/migration-policy-reconciliation.md

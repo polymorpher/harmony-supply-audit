@@ -39,7 +39,7 @@ migration-policy:
 		--existing-non-issuance "$(MIGRATION_REPO)/artifacts/supply-reconciliation-20260911/non-issuance-inventory.csv" \
 		--existing-non-issuance "$(MIGRATION_REPO)/artifacts/supply-reconciliation-20260911/inaccessible-address-inventory-20260923.csv" \
 		--historical-retention artifacts/historical-retention-snapshot-20260916/not-issued-retained-initial-addresses.csv \
-		--historical-retention artifacts/rollback-leak-retention-20260923/not-issued-rollback-leak-recipients.csv \
+		--historical-retention artifacts/revert-leak-retention-20260923/not-issued-revert-leak-recipients.csv \
 		--supply-non-issuance-summary results/2026-09-16/migration-non-issuance-summary.json \
 		--output results/2026-09-17/migration-policy-reconciliation.json \
 		--report docs/findings/migration-policy-reconciliation.md \

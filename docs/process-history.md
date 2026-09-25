@@ -24,7 +24,7 @@ This file records what was done and why the method changed.
 - Exported staking claims at historical checkpoints.
 - Scanned canonical outgoing and incoming cross-shard receipts.
 - Traced source transactions and reverted execution frames.
-- Proved material rollback-leak incidents in May 2025 and April 2026, plus
+- Proved material revert-leak incidents in May 2025 and April 2026, plus
   additional June–July 2026 cohorts.
 
 ## September 9: exploit flow tracing
@@ -159,7 +159,7 @@ deferred until former DevOps staff or node backups provide the original files.
 - Replaced the misleading “Year 2025 Supply Reserve” label with “2050 premint
   reserve”; the underlying fixed premint did not change.
 - On September 23, extended incident non-issuance to every wallet credited by
-  a proven rollback-leak receipt, including the smaller June–July 2026 cohort
+  a proven revert-leak receipt, including the smaller June–July 2026 cohort
   that the distribution-contract extraction could not see: the credited amount
   is withheld, capped at what the wallet still holds after earlier deductions.
 

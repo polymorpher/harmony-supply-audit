@@ -88,7 +88,9 @@ Important fields include:
 - source-trace classification.
 
 `rollback_leak` means the destination receipt was accepted while the matching
-source debit occurred inside execution that reverted.
+source debit occurred inside execution that reverted. Reports, policy files and
+prose call this a revert leak, to keep it apart from the August 2026 chain
+rollback; stored scans keep the classification value `rollback_leak`.
 
 `precompile_call_count` includes rejected call-family invocations, but not
 `SELFDESTRUCT` transfers to the precompile address.

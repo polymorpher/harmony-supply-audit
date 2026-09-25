@@ -31,7 +31,7 @@ balance and later cross-shard flows.
 
 That derivation uses the same `valid_source_debit` classifications as the
 rollback audit. Therefore the residual chain is not an independent
-confirmation of shard-1-sourced rollback leakage; compatible source
+confirmation of shard-1-sourced revert leakage; compatible source
 transaction traces or separately recorded canonical source-debit evidence are
 the primary evidence for that direction.
 

@@ -94,7 +94,9 @@ See [`2050-premint-reserve.md`](2050-premint-reserve.md).
 The integrated migration-stage check then reads the migration repository's
 address-level policy and independently verifies:
 
-- threshold membership was fixed before deductions;
+- snapshot threshold membership (the review scope) is gross, while a wallet
+  enters the initial distribution only if it holds at least 1,000 ONE after
+  incident deductions (reviewed non-issuance and retained exploit caps);
 - migration stage and issuance treatment are separate fields;
 - the initial activity population contains wallets only;
 - validator wrappers remain wallet accounts;
@@ -136,7 +138,7 @@ ranges. `cx-source-audit.py` then checks source transactions and traces to
 distinguish:
 
 - valid source debit;
-- reverted-frame rollback leakage;
+- reverted-frame revert leakage;
 - independently established source-debit absence without mechanism proof;
 - unresolved source behavior.
 
@@ -145,7 +147,7 @@ rollback-created ONE.
 
 For traced transactions, an invocation of the cross-shard precompile that
 itself returned an error did not create a receipt. In particular, a rejected
-second invocation must not turn a successful first debit into rollback leakage.
+second invocation must not turn a successful first debit into revert leakage.
 The classifier requires exactly one locally completed precompile invocation;
 that invocation's effective sender context, ABI amount, recipient, and
 destination shard must match the canonical receipt. `DELEGATECALL` preserves
@@ -274,13 +276,13 @@ Address-list audits:
 - verify retained historical-incident balances against fixed-block RPC and
   cutoff state.
 
-`build-rollback-leak-retention.py` lists every wallet credited by a proven
-rollback-leak receipt and withholds the credited amount, capped at the wallet's
+`build-revert-leak-retention.py` lists every wallet credited by a proven
+revert-leak receipt and withholds the credited amount, capped at the wallet's
 native cutoff claim after earlier non-issuance, so wallets holding only exploit
 credit lose their whole claim while legitimate remainders stay eligible.
 
 `build-non-issuance-audit.py` combines the reviewed existing inventory with
-the retained historical-incident cap and the rollback-leak list, verifies each
+the retained historical-incident cap and the revert-leak list, verifies each
 list's rule and overlaps (a wallet in both incident lists loses its retained
 cap first), and proves:
 
