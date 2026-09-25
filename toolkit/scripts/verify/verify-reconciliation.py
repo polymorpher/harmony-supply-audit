@@ -311,10 +311,10 @@ def main():
         "overlap_with_existing_non_issuance_addresses"
     ]:
         raise ValueError("historical retained addresses overlap existing policy")
-    leak_section = non_issuance.get("rollback_leak_credited_recipients")
-    rollback_leak = int(leak_section["not_issued_atto"]) if leak_section else 0
+    leak_section = non_issuance.get("revert_leak_credited_recipients")
+    revert_leak = int(leak_section["not_issued_atto"]) if leak_section else 0
     combined_not_issued = int(non_issuance["totals"]["not_issued_atto"])
-    if combined_not_issued != existing_non_issuance + retained + rollback_leak:
+    if combined_not_issued != existing_non_issuance + retained + revert_leak:
         raise ValueError("combined non-issuance total mismatch")
     if int(non_issuance["totals"]["gross_cutoff_claim_atto"]) != ledger_total:
         raise ValueError("non-issuance gross claim does not match cutoff ledger")
@@ -379,11 +379,11 @@ def main():
         leak_csv = (
             REPOSITORY_ROOT
             / "artifacts"
-            / "rollback-leak-retention-20260923"
-            / Path(non_issuance["sources"]["rollback_leak_retention"]["name"]).name
+            / "revert-leak-retention-20260923"
+            / Path(non_issuance["sources"]["revert_leak_retention"]["name"]).name
         )
-        if sha256(leak_csv) != non_issuance["sources"]["rollback_leak_retention"]["sha256"]:
-            raise ValueError("rollback-leak non-issuance CSV hash mismatch")
+        if sha256(leak_csv) != non_issuance["sources"]["revert_leak_retention"]["sha256"]:
+            raise ValueError("revert-leak non-issuance CSV hash mismatch")
         leak_rows = 0
         leak_csv_total = 0
         with leak_csv.open(newline="") as source:
@@ -395,10 +395,10 @@ def main():
                     max(int(row["cutoff_native_claim_atto"]) - int(row["prior_non_issuance_atto"]), 0),
                 )
                 if amount != expected or amount <= 0 or row["migration_treatment"] != "not_issued":
-                    raise ValueError(f"invalid rollback-leak amount: {row['address_hex']}")
+                    raise ValueError(f"invalid revert-leak amount: {row['address_hex']}")
                 leak_csv_total += amount
-        if leak_rows != leak_section["positive_addresses"] or leak_csv_total != rollback_leak:
-            raise ValueError("rollback-leak non-issuance CSV total mismatch")
+        if leak_rows != leak_section["positive_addresses"] or leak_csv_total != revert_leak:
+            raise ValueError("revert-leak non-issuance CSV total mismatch")
         leak_asset = assets.get(leak_csv.name)
         if (
             leak_asset is None
@@ -406,7 +406,7 @@ def main():
             or leak_asset["rows"] != leak_rows
             or leak_asset["sha256"] != sha256(leak_csv)
         ):
-            raise ValueError("rollback-leak non-issuance release metadata mismatch")
+            raise ValueError("revert-leak non-issuance release metadata mismatch")
 
     print(
         "PASS reconciliation: "

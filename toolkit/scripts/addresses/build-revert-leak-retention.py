@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-"""Withhold rollback-leak credit from the wallets that received it.
+"""Withhold revert-leak credit from the wallets that received it.
 
-A proven rollback-leak receipt credited ONE to a destination wallet without a
+A proven revert-leak receipt credited ONE to a destination wallet without a
 matching debit anywhere. For every such destination the migration does not
 issue the credited amount, capped at what the wallet still holds at cutoff
 after earlier non-issuance: a wallet holding only exploit credit loses its
@@ -20,6 +20,7 @@ from pathlib import Path
 
 
 ATTO = 10**18
+# receipt classification values stored by cx-source-audit.py
 LEAK_CLASSIFICATIONS = {"rollback_leak", "source_debit_absent"}
 INCIDENT_LABELS = {
     "may-2025": "may-2025",
@@ -180,7 +181,7 @@ def main():
             "retained_cap_atto": str(withheld),
             "retained_cap_one": one(withheld),
             "cutoff_block": str(args.cutoff_block),
-            "source_evidence": "proven rollback-leak receipts (cx-source-audit classification)",
+            "source_evidence": "proven revert-leak receipts (cx-source-audit classification)",
             "migration_treatment": "not_issued",
         })
 
@@ -196,11 +197,11 @@ def main():
         "status": "passed",
         "_provenance": {
             "classification": "policy scenario",
-            "factual_input": "proven rollback-leak receipts and cutoff-pinned native claims",
+            "factual_input": "proven revert-leak receipts and cutoff-pinned native claims",
             "note": "the credited amounts are factual; not issuing them is a migration policy",
         },
         "rule": (
-            "for each destination credited by a proven rollback-leak receipt, do not issue "
+            "for each destination credited by a proven revert-leak receipt, do not issue "
             "min(total credited, native cutoff claim minus earlier non-issuance)"
         ),
         "leak_classifications": sorted(LEAK_CLASSIFICATIONS),

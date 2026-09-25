@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 
 
-SCRIPT = Path(__file__).parents[1] / "scripts" / "addresses" / "build-rollback-leak-retention.py"
+SCRIPT = Path(__file__).parents[1] / "scripts" / "addresses" / "build-revert-leak-retention.py"
 A, B, C, D = (f"0x{n:040x}" for n in (0xA, 0xB, 0xC, 0xD))
 
 
@@ -18,7 +18,7 @@ def write(path, fields, rows):
         writer.writerows(rows)
 
 
-class RollbackLeakRetentionTest(unittest.TestCase):
+class RevertLeakRetentionTest(unittest.TestCase):
     def test_withholds_credit_capped_at_remaining_claim(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

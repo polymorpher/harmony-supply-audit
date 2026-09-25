@@ -37,10 +37,10 @@ def parse_args():
     parser.add_argument("--retained-summary", required=True)
     parser.add_argument("--cutoff-claim-summary", required=True)
     parser.add_argument(
-        "--rollback-leak-retention",
-        help="build-rollback-leak-retention.py export: wallets credited by proven rollback-leak receipts",
+        "--revert-leak-retention",
+        help="build-revert-leak-retention.py export: wallets credited by proven revert-leak receipts",
     )
-    parser.add_argument("--rollback-leak-summary", help="summary written with --rollback-leak-retention")
+    parser.add_argument("--revert-leak-summary", help="summary written with --revert-leak-retention")
     parser.add_argument("--output-csv", required=True)
     parser.add_argument("--summary-output", required=True)
     parser.add_argument("--replace", action="store_true")
@@ -200,7 +200,7 @@ def load_retained(path, output_directory):
     return rows, seen, by_incident, next(iter(blocks))
 
 
-def load_rollback_leak(path, summary_path, retained_caps, existing_amounts):
+def load_revert_leak(path, summary_path, retained_caps, existing_amounts):
     """Re-check every withheld amount: min(credit, native claim - earlier non-issuance)."""
     summary = json.loads(summary_path.read_text())
     if summary.get("status") != "passed":
@@ -333,12 +333,12 @@ def main():
     leak_section = None
     leak_total = 0
     leak_sources = {}
-    if args.rollback_leak_retention:
-        if not args.rollback_leak_summary:
-            raise ValueError("--rollback-leak-retention needs --rollback-leak-summary")
-        leak_path = Path(args.rollback_leak_retention)
-        leak_summary_path = Path(args.rollback_leak_summary)
-        leak_addresses, leak_by_incident, leak_total, leak_overlap, leak_summary = load_rollback_leak(
+    if args.revert_leak_retention:
+        if not args.revert_leak_summary:
+            raise ValueError("--revert-leak-retention needs --revert-leak-summary")
+        leak_path = Path(args.revert_leak_retention)
+        leak_summary_path = Path(args.revert_leak_summary)
+        leak_addresses, leak_by_incident, leak_total, leak_overlap, leak_summary = load_revert_leak(
             leak_path,
             leak_summary_path,
             {row["address_hex"]: int(row["retained_cap_atto"]) for row in retained_rows},
@@ -366,12 +366,12 @@ def main():
             "addresses_also_in_retained_initial_addresses": leak_overlap,
             "overlap_note": (
                 "an address in both lists loses its retained cap first and then "
-                "the rollback-leak amount from what remains"
+                "the revert-leak amount from what remains"
             ),
         }
         leak_sources = {
-            "rollback_leak_retention": {"name": portable_source_name(leak_path), "sha256": sha256(leak_path)},
-            "rollback_leak_summary": {"name": portable_source_name(leak_summary_path),
+            "revert_leak_retention": {"name": portable_source_name(leak_path), "sha256": sha256(leak_path)},
+            "revert_leak_summary": {"name": portable_source_name(leak_summary_path),
                                       "sha256": sha256(leak_summary_path)},
         }
     combined = existing_total + retained_total + leak_total
@@ -457,7 +457,7 @@ def main():
             "not_issued_one": one(retained_total),
             "overlap_with_existing_non_issuance_addresses": 0,
         },
-        **({"rollback_leak_credited_recipients": leak_section} if leak_section else {}),
+        **({"revert_leak_credited_recipients": leak_section} if leak_section else {}),
         "totals": {
             "gross_cutoff_claim_atto": str(gross_claim),
             "gross_cutoff_claim_one": one(gross_claim),
@@ -515,7 +515,7 @@ def main():
         },
     }
     if leak_section:
-        summary["policy"]["rollback_leak_credit_rule"] = leak_section["rule"]
+        summary["policy"]["revert_leak_credit_rule"] = leak_section["rule"]
     write_json(summary_path, summary, args.replace)
     print(
         json.dumps(
@@ -523,7 +523,7 @@ def main():
                 "status": "passed",
                 "retained_rows": len(retained_rows),
                 "retained_not_issued_atto": str(retained_total),
-                "rollback_leak_not_issued_atto": str(leak_total),
+                "revert_leak_not_issued_atto": str(leak_total),
                 "combined_not_issued_atto": str(combined),
             },
             sort_keys=True,
