@@ -117,8 +117,14 @@ policy from shared source artifacts rather than an editorial calculation.
     ),
 )}
 
-The initial cohort contains only positive eligible wallets with indexed
-activity in the six calendar months before cutoff. Reviewed contracts are not
+The initial cohort contains only positive eligible wallets that hold at least
+1,000 ONE after incident deductions (reviewed non-issuance and retained
+exploit caps) and have indexed activity in the six calendar months before
+cutoff. `{result["deferred_below_threshold_after_incident_deductions"]["addresses"]:,}`
+snapshot-qualified wallets
+(`{one(result["deferred_below_threshold_after_incident_deductions"]["allocation_atto"])} ONE`
+remaining) fall below 1,000 ONE after those deductions and are deferred with
+the below-threshold wallets. Reviewed contracts are not
 present in its activity rows. Exchange/manual routing rows remain allocations;
 their routing category does not mean non-issuance. In the migration
 repository's compiled routing, confirmed exchange wallets leave this cohort for
@@ -164,7 +170,7 @@ gross native snapshot                      {one(allocation["gross_native_snapsho
 - existing non-issuance                    {one(allocation["existing_non_issuance_atto"])}
 - historical retained caps                 {one(allocation["historical_retained_caps_atto"])}
     incident-contract recipients           {one(allocation["historical_incident_contract_recipients_atto"])}
-    rollback-leak credited wallets         {one(allocation["rollback_leak_credited_recipients_atto"])}
+    revert-leak credited wallets         {one(allocation["revert_leak_credited_recipients_atto"])}
 - retained WONE backing                     {one(allocation["wone_retained_not_issued_atto"])}
 - reviewed-contract non-issuance            {one(allocation["reviewed_contract_non_issuance_atto"])}
 = total migration allocation               {one(allocation["total_migration_atto"])}
@@ -178,6 +184,9 @@ a burn or treasury transfer.
 
 - Address-stage rows are unique and match the recorded SHA-256.
 - The threshold-qualified stage set is disjoint by stage.
+- Every initial wallet holds at least 1,000 ONE after incident deductions;
+  every wallet below that is deferred, and their count and amount match the
+  stage summary.
 - Validator wrappers remain wallet accounts.
 - Contract group amounts, WONE source offset, and both non-issuance inventories
   re-sum independently.
@@ -232,6 +241,7 @@ def main():
     totals = Counter()
     initial_routing = Counter()
     initial_validators = 0
+    below_after_deductions = {"addresses": 0, "allocation_atto": 0}
     initial_since = parse_utc(
         stage_summary["initial_window"]["since_time_utc"]
     )
@@ -340,11 +350,31 @@ def main():
                 if row["last_activity_time_utc"]
                 else None
             )
+            meets_threshold = (
+                int(row["qualification_total_atto"])
+                - values["existing_non_issuance_atto"]
+                - values["historical_retained_cap_atto"]
+                >= 1000 * ATTO_PER_ONE
+            )
+            if (
+                row["account_classification"] in {"wallet", "validator_wallet"}
+                and values["migration_allocation_atto"] > 0
+                and not meets_threshold
+            ):
+                if stage != "deferred":
+                    raise ValueError(
+                        f"wallet below threshold after incident deductions is not deferred at line {line}"
+                    )
+                below_after_deductions["addresses"] += 1
+                below_after_deductions["allocation_atto"] += values[
+                    "migration_allocation_atto"
+                ]
             if stage == "initial":
                 if (
                     row["account_classification"]
                     not in {"wallet", "validator_wallet"}
                     or values["migration_allocation_atto"] <= 0
+                    or not meets_threshold
                     or activity_time is None
                     or activity_time < initial_since
                 ):
@@ -357,6 +387,7 @@ def main():
                 stage == "deferred"
                 and row["account_classification"] in {"wallet", "validator_wallet"}
                 and values["migration_allocation_atto"] > 0
+                and meets_threshold
                 and activity_time is not None
                 and activity_time >= initial_since
             ):
@@ -427,12 +458,12 @@ def main():
             "not_issued_atto"
         ]
     )
-    supply_rollback_leak = int(
-        supply_non_issuance.get("rollback_leak_credited_recipients", {}).get(
+    supply_revert_leak = int(
+        supply_non_issuance.get("revert_leak_credited_recipients", {}).get(
             "not_issued_atto", 0
         )
     )
-    if historical_total != supply_retained + supply_rollback_leak:
+    if historical_total != supply_retained + supply_revert_leak:
         raise ValueError("historical retained-cap total mismatch")
     if existing_total + historical_total != int(
         supply_non_issuance["totals"]["not_issued_atto"]
@@ -476,6 +507,13 @@ def main():
         != stage_summary["validator_wrappers"]["initial_addresses"]
     ):
         raise ValueError("initial wallet composition mismatch")
+    deferred = stage_summary["deferred_wallets"]
+    if below_after_deductions["addresses"] != int(
+        deferred["below_threshold_after_incident_deductions_addresses"]
+    ) or below_after_deductions["allocation_atto"] != int(
+        deferred["below_threshold_after_incident_deductions_atto"]
+    ):
+        raise ValueError("below-threshold-after-deductions wallets mismatch")
     if stages["next_stage"]["allocation_atto"] != int(
         allocation["next_stage_contracts_atto"]
     ):
@@ -523,6 +561,9 @@ def main():
                 "since_time_utc"
             ],
         },
+        "deferred_below_threshold_after_incident_deductions": dict(
+            below_after_deductions
+        ),
         "stages": {
             stage: dict(values) for stage, values in sorted(stages.items())
         },
@@ -536,7 +577,7 @@ def main():
             "existing_non_issuance_atto": existing_total,
             "historical_retained_caps_atto": historical_total,
             "historical_incident_contract_recipients_atto": supply_retained,
-            "rollback_leak_credited_recipients_atto": supply_rollback_leak,
+            "revert_leak_credited_recipients_atto": supply_revert_leak,
             "wone_retained_not_issued_atto": retained_wone,
             "reviewed_contract_non_issuance_atto": contract_non_issuance,
             "abandoned_contracts_public_aggregate_atto": (
